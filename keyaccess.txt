@@ -1,0 +1,13 @@
+model architecture:
+    - encoder: arch_<ds>_encoder
+    - decoder: arch_<ds>_<task>_decoder
+    - cross: arch_<ds>_cross
+
+loss function:
+    - loss_<task>_<loss_name>
+
+metric:
+    - metric_<task>_<metric_name>
+
+dataset:
+    - ds_<dataset_name>

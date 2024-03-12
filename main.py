@@ -21,4 +21,4 @@ if __name__ == "__main__":
 
     # training
     parser.add_argument('--seed', type=int, default=0, help='Seed for everything else')
-    
+    parser.add_argument('--dvids', type=str, nargs='+', default=[0], help='list of device used in training')
