@@ -1,17 +1,14 @@
-import torch
+from torch import Tensor
 from torch import nn
 
 
-class Core(nn.Module):
+class MTLDOGARCH(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
         self.task_num = args.task_num
-
-        self.encoder = None
-        self.decoder = None
     
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         raise NotImplementedError()
     
     def get_share_params(self):
