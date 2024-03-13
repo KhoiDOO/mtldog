@@ -1,8 +1,10 @@
 model architecture:
     - hps
-        - encoder: arch_<ds>_<arch_type>_<backbone>_encoder
-        - decoder: arch_<ds>_<task>_<arch_type>_<backbone>_decoder
-    - cross: arch_<ds>_cross
+        - encoder: arch_hps_<ds>_<arch_type>_<backbone>_encoder
+        - decoder: arch_hps_<ds>_<task>_<arch_type>_<backbone>_decoder
+    - cross: 
+        - encoder: arch_cross_<ds>_<arch_type>_<backbone>_encoder
+        - decoder: arch_cross_<ds>_<arch_type>_<backbone>_decoder
 
 loss function:
     - loss_<task>_<loss_name>
