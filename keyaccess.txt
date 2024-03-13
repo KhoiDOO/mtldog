@@ -1,6 +1,7 @@
 model architecture:
-    - encoder: arch_<ds>_<arch_type>_<backbone>_encoder
-    - decoder: arch_<ds>_<task>_<arch_type>_<backbone>_decoder
+    - hps
+        - encoder: arch_<ds>_<arch_type>_<backbone>_encoder
+        - decoder: arch_<ds>_<task>_<arch_type>_<backbone>_decoder
     - cross: arch_<ds>_cross
 
 loss function:

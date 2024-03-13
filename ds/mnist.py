@@ -26,7 +26,7 @@ class MTLRotMnist(MTLDOGDS):
                  dm2idx: Dict[str, int] = {txt : idx for txt, idx in zip(DOMAIN_TXT, DOMAIN_IDX)},
                  src_data: List[Any] = None,
                  src_labl: List[Any] = None,
-                ) -> None:
+                ) -> MTLDOGDS:
 
         if root_dir is None:
             root_dir = "/".join(__file__.split("/")[:-1]) + "/source"
@@ -50,16 +50,24 @@ class MTLRotMnist(MTLDOGDS):
             ]
         )
     
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.src_data)
 
     def __getitem__(self, index: int) -> tuple[Tensor, Dict[str, Tensor]]:
         img = self.transform(self.data[index])
 
-        return img, {"rec" : img, "cls" : self.labl[index]}
+        tsk_dct = {}
+
+        for tk in self.tks:
+            if tk == 'rec':
+                tsk_dct[tk] == img
+            elif tk == 'cls':
+                tsk_dct[tk] == self.labl[index]
+
+        return img, tsk_dct
     
 
-def ds_mtlrotmnist(args: Namespace) -> tuple[List[Tensor], List[Tensor]]:
+def ds_mtlrotmnist(args: Namespace) -> tuple[List[MTLRotMnist], List[MTLRotMnist]]:
 
     if args.dt is None:
         args.dt = "/".join(__file__.split("/")[:-1]) + "/source"
