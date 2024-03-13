@@ -1,6 +1,6 @@
 model architecture:
-    - encoder: arch_<ds>_encoder
-    - decoder: arch_<ds>_<task>_decoder
+    - encoder: arch_<ds>_<arch_type>_<backbone>_encoder
+    - decoder: arch_<ds>_<task>_<arch_type>_<backbone>_decoder
     - cross: arch_<ds>_cross
 
 loss function:
@@ -11,3 +11,6 @@ metric:
 
 dataset:
     - ds_<dataset_name>
+
+algorithm:
+    - algo_<algo_name>

@@ -43,12 +43,13 @@ class MTLDOGDS(Dataset):
             raise ValueError(f"domain {self.dm} is not available in {self.def_dms}")
     
     def check_tk(self):
-        if len(self.tks) > len(self.def_dms):
-            raise ValueError(f"the number of input tasks ({len(self.tks)}) is more than available domains ({len(self.def_tks)})")
+        if len(self.tks) > len(self.def_tks):
+            raise ValueError(f"the number of input tasks ({len(self.tks)}) is more than available tasks ({len(self.def_tks)}), \
+                             the available tasks are: {self.def_tks}")
 
         for tk in self.tks:
-            if tk not in self.def_dms:
-                raise ValueError(f"domain {tk} is not available in {self.def_dms}")
+            if tk not in self.def_tks:
+                raise ValueError(f"task {tk} is not available in {self.def_tks}")
     
     def __getitem__(self, index: int) -> tuple[Tensor, Dict[str, Tensor]]:
         return super().__getitem__(index)
