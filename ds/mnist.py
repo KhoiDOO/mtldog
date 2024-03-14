@@ -8,14 +8,14 @@ import torch
 from torch import Tensor
 import torchvision
 from torchvision import transforms
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST as mnist
 from torchvision.transforms.functional import rotate
 
 DOMAIN_TXT = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
 DOMAIN_IDX = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
 TASK_TXT = ['rec', 'cls']
 
-class MTLRotMnist(MTLDOGDS):
+class MNIST(MTLDOGDS):
     def __init__(self, 
                  root_dir: str | None = None, 
                  domain: int | None = None, 
@@ -31,7 +31,7 @@ class MTLRotMnist(MTLDOGDS):
         if root_dir is None:
             root_dir = "/".join(__file__.split("/")[:-1]) + "/source"
 
-        super(MTLRotMnist, self).__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
+        super(MNIST, self).__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
         if src_data is None:
             raise ValueError("src_data cannot be None")
@@ -67,13 +67,13 @@ class MTLRotMnist(MTLDOGDS):
         return img, tsk_dct
     
 
-def ds_mtlrotmnist(args: Namespace) -> tuple[List[MTLRotMnist], List[MTLRotMnist]]:
+def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
 
     if args.dt is None:
         args.dt = "/".join(__file__.split("/")[:-1]) + "/source"
 
-    ori_tr = MNIST(args.dt, train=True, download=True)
-    ori_te = MNIST(args.dt, train=False, download=True)
+    ori_tr = mnist(args.dt, train=True, download=True)
+    ori_te = mnist(args.dt, train=False, download=True)
 
     ori_tr_imgs = ori_tr.data
     ori_tr_lbls = ori_tr.targets
@@ -94,7 +94,7 @@ def ds_mtlrotmnist(args: Namespace) -> tuple[List[MTLRotMnist], List[MTLRotMnist
 
     for i, dmidx in enumerate(DOMAIN_IDX):
         tr_dss.append(
-            MTLRotMnist(
+            MNIST(
                 root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=True, 
                 src_data=ori_tr_imgs[i::len(DOMAIN_IDX)],
                 src_labl=ori_tr_lbls[i::len(DOMAIN_IDX)]
@@ -102,11 +102,13 @@ def ds_mtlrotmnist(args: Namespace) -> tuple[List[MTLRotMnist], List[MTLRotMnist
         )
 
         te_dss.append(
-            MTLRotMnist(
+            MNIST(
                 root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=True, 
                 src_data=ori_te_imgs[i::len(DOMAIN_IDX)],
                 src_labl=ori_te_lbls[i::len(DOMAIN_IDX)]
             )
         )
     
-    return tr_dss, te_dss
+    args.num_class = 10
+    
+    return args, tr_dss, te_dss
