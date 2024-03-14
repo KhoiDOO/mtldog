@@ -165,5 +165,3 @@ runs/
 ds/src/
 conversion/download
 conversion/export
-
-*.sh

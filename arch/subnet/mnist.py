@@ -9,7 +9,7 @@ class MNIST_HPS_AE_BASE_ENCODER(nn.Module):
         super(MNIST_HPS_AE_BASE_ENCODER, self).__init__()
 
         self.net = torch.nn.Sequential(
-            nn.Conv2d(1, 64, 3, strid=1, padding=1),
+            nn.Conv2d(1, 64, 3, stride=1, padding=1),
             nn.ReLU(),
             nn.GroupNorm(8, 64),
             nn.Conv2d(64, 128, 3, stride=2, padding=1),

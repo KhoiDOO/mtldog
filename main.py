@@ -16,11 +16,12 @@ if __name__ == "__main__":
 
     # domain - tasks - losses
     parser.add_argument('--trdms', type=int, nargs='+', required=True, default=[0], help='list of domain used in training')
-    parser.add_argument('--trtks', type=str, nargs='+', required=True, help='list of tasks used in training')
+    parser.add_argument('--tkss', type=str, nargs='+', required=True, help='list of tasks used in training')
     parser.add_argument('--losses', type=str, nargs='+', required=True, help='losses of tasks used in training')
 
     # method
     parser.add_argument('--m', type=str, required=True, help='method used in training')
+    parser.add_argument('--hp', type=str, required=True, help='json file path for hyper-parameter of method')
 
     # model
     parser.add_argument('--model', type=str, required=True, help='model type (i.e. ae, hps (hard parameter sharing))')
@@ -29,7 +30,7 @@ if __name__ == "__main__":
 
     # training
     parser.add_argument('--seed', type=int, default=0, help='Seed for everything else')
-    parser.add_argument('--tm', type=str, default='sup', help='training mode (i.e. supervised)')
+    parser.add_argument('--tm', type=str, default='sup', help='training mode (i.e. sup (supervised))')
     parser.add_argument('--dvids', type=str, nargs='+', default=[0], help='list of device used in training')
     parser.add_argument('--epoch', type=int, default=1, help='number of epochs used in training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
