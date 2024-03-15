@@ -42,4 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_prj', type=str, required=True, help='wandb project name')
     parser.add_argument('--wandb_entity', type=str, required=True, help='wandb entity name')
 
+    # focal loss
+    parser.add_argument('--gamma', type=float, default=1, help='gamma for focal loss')
+
     args = parser.parse_args()
