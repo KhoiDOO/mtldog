@@ -1,5 +1,5 @@
 python main.py --ds mnist --dt ./ds/source --bs 64 --wk 12 --pm \
-    --trdms 0 \
+    --trdms 0 1 \
     --tkss rec cls \
     --losses mse ce \
     --m erm --hp ./hparams/erm.json \
