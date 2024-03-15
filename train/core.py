@@ -16,6 +16,8 @@ from torch.utils.data.distributed import DistributedSampler
 import ds
 import arch
 import algo
+import loss
+import metric
 
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
@@ -27,6 +29,8 @@ class MTLDOGTR:
         self.prepare_save_dir()
         self.prepare_algo()
         self.prepare_wandb()
+
+        self.prepare_loss()
 
     def prepare_seed(self):
         random.seed(self.args.seed)
@@ -93,18 +97,6 @@ class MTLDOGTR:
         
         self.args.save_dir = self.save_dir
     
-
-    def prepare_wandb(self):
-        self.args.run_name = f'{self.args.method}__{self.args.ds}__{self.args.hashcode}'
-
-        self.__run = wandb.init(
-            project=self.args.wandb_prj,
-            entity=self.args.wandb_entity,
-            config=self.args,
-            name=self.args.run_name,
-            force=True
-        )
-    
     def prepare_algo(self):
         algo_map = vars(algo)
         self.algo_dct = {k : algo_map[k] for k in algo_map if 'algo' in k}
@@ -119,6 +111,23 @@ class MTLDOGTR:
                 super().__init__(args)
         
         self.agent = Agent(self.args)
+    
+
+    def prepare_wandb(self):
+        self.args.run_name = f'{self.args.method}__{self.args.ds}__{self.args.hashcode}'
+
+        self.__run = wandb.init(
+            project=self.args.wandb_prj,
+            entity=self.args.wandb_entity,
+            config=self.args,
+            name=self.args.run_name,
+            force=True
+        )
+    
+    def prepare_loss(self):
+        loss_map = vars(loss)
+        self.loss_dct = {k : loss_map[k] for k in loss_map if 'loss' in k and k.split('_')[-1] in self.args.losses and k.split('_')[-2] in self.args.tkss}
+    
     
     def log_wbmodel(self):
         best_path = self.args.save_dir + f'/best.pt'
