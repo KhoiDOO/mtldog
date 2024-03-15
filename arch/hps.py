@@ -18,7 +18,7 @@ class HPS(MTLDOGARCH):
         enc_key = f'arch_{ds}_{model}_{arch_type}_{backbone}_encoder'
         if enc_key not in MODEL_MAP:
             raise ValueError(f"encoder architecture key {enc_key} is not available in {[x for x in MODEL_MAP.keys() if 'encoder' in x]}")
-        self.encoder = MODEL_MAP[enc_key]
+        self.encoder = MODEL_MAP[enc_key](args)
 
         self.decoder = ModuleDict()
         for tk in self.args.trtks:
@@ -27,7 +27,7 @@ class HPS(MTLDOGARCH):
                 raise ValueError(f"decoder architecture key {dec_key} is not available in {[x for x in MODEL_MAP.keys() if 'decoder' in x]}")
 
             # self.decoder[tk] = MODEL_MAP[dec_key]
-            self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key])
+            self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key](args))
 
     def get_share_params(self):
         return self.encoder.parameters()
@@ -39,3 +39,6 @@ class HPS(MTLDOGARCH):
         enclat = self.encoder(x)
 
         return {tk : self.decoder[tk](enclat) for tk in self.decoder}
+
+def model_hps():
+    return HPS
