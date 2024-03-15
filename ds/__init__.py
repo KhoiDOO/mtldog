@@ -1,1 +1,1 @@
-from .mnist import ds_mtlrotmnist
+from .mnist import ds_mnist

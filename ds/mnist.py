@@ -15,6 +15,9 @@ DOMAIN_TXT = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
 DOMAIN_IDX = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
 TASK_TXT = ['rec', 'cls']
 
+
+
+
 class MNIST(MTLDOGDS):
     def __init__(self, 
                  root_dir: str | None = None, 
@@ -103,7 +106,7 @@ def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
 
         te_dss.append(
             MNIST(
-                root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=True, 
+                root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=False, 
                 src_data=ori_te_imgs[i::len(DOMAIN_IDX)],
                 src_labl=ori_te_lbls[i::len(DOMAIN_IDX)]
             )
