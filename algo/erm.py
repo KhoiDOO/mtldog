@@ -14,3 +14,6 @@ class ERM(MTLDOGALGO):
         total_loss.backward()
 
         return None
+
+def algo_erm():
+    return ERM
