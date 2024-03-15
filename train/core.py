@@ -11,20 +11,22 @@ import json
 import hashlib
 
 from torch.utils.data import DataLoader
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
-
-import torch.multiprocessing as mp
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 
 import ds
-
+import arch
+import algo
 
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
         self.args = args
+
+        self.prepare_seed()
+        self.prepare_device()
+        self.prepare_ds()
+        self.prepare_save_dir()
+        self.prepare_algo()
+        self.prepare_wandb()
 
     def prepare_seed(self):
         random.seed(self.args.seed)
@@ -103,7 +105,20 @@ class MTLDOGTR:
             force=True
         )
     
-    
+    def prepare_algo(self):
+        algo_map = vars(algo)
+        self.algo_dct = {k : algo_map[k] for k in algo_map if 'algo' in k}
+        self.algo = self.algo_dct[f'algo_{self.args.m}']()
+
+        model_map = vars(arch)
+        self.model_dct = {k : model_map[k] for  k in model_map if 'model' in k}
+        self.model = self.model_dct[f'model_{self.args.model}']()
+
+        class Agent(self.model, self.algo):
+            def __init__(self, args):
+                super().__init__(args)
+        
+        self.agent = Agent(self.args)
     
     def log_wbmodel(self):
         best_path = self.args.save_dir + f'/best.pt'
