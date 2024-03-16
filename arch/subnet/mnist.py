@@ -75,3 +75,21 @@ def arch_mnist_hps_cls_ae_base_decoder(args: Namespace):
 
 def arch_mnist_hps_rec_ae_base_decoder(args: Namespace):
     return MNIST_HPS_REC_AE_BASE_DECODER(args)
+
+def arch_mnistmed_hps_ae_base_encoder(args: Namespace):
+    return MNIST_HPS_AE_BASE_ENCODER(args)
+
+def arch_mnistmed_hps_cls_ae_base_decoder(args: Namespace):
+    return MNIST_HPS_CLS_AE_BASE_DECODER(args)
+
+def arch_mnistmed_hps_rec_ae_base_decoder(args: Namespace):
+    return MNIST_HPS_REC_AE_BASE_DECODER(args)
+
+def arch_mnisteasy_hps_ae_base_encoder(args: Namespace):
+    return MNIST_HPS_AE_BASE_ENCODER(args)
+
+def arch_mnisteasy_hps_cls_ae_base_decoder(args: Namespace):
+    return MNIST_HPS_CLS_AE_BASE_DECODER(args)
+
+def arch_mnisteasy_hps_rec_ae_base_decoder(args: Namespace):
+    return MNIST_HPS_REC_AE_BASE_DECODER(args)
