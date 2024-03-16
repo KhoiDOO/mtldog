@@ -16,8 +16,6 @@ DOMAIN_IDX = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
 TASK_TXT = ['rec', 'cls']
 
 
-
-
 class MNIST(MTLDOGDS):
     def __init__(self, 
                  root_dir: str | None = None, 
@@ -71,10 +69,8 @@ class MNIST(MTLDOGDS):
                 tsk_dct[tk] = self.labl[index]
 
         return img, tsk_dct
-    
 
-def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
-
+def get_mnist(args: Namespace) -> tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]:
     if args.dt is None:
         args.dt = "/".join(__file__.split("/")[:-1]) + "/source"
 
@@ -94,6 +90,13 @@ def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
     shuffle = torch.randperm(len(ori_te_imgs))
     ori_te_imgs = ori_te_imgs[shuffle]
     ori_te_lbls = ori_te_lbls[shuffle]
+
+    return ori_tr_imgs, ori_tr_lbls, ori_te_imgs, ori_te_lbls
+    
+
+def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
+
+    ori_tr_imgs, ori_tr_lbls, ori_te_imgs, ori_te_lbls = get_mnist(args=args)
 
     tr_dss = []
     te_dss = []
