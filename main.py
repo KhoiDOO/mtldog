@@ -46,3 +46,11 @@ if __name__ == "__main__":
     parser.add_argument('--gamma', type=float, default=1, help='gamma for focal loss')
 
     args = parser.parse_args()
+
+    if args.tm == 'sup':
+        from train import SUP
+        trainer = SUP(args=args)
+    else:
+        raise ValueError(f"training mode {args.tm} is not available")
+
+    trainer.run()

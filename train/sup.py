@@ -57,7 +57,7 @@ class SUP(MTLDOGTR):
                                 losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
 
                                 if args.rank == 0:
-                                    trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split("_")[-1]}"
+                                    trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                     if trdm_loss_key not in trdm_loss_dct:
                                         trdm_loss_dct[trdm_loss_key] = losses[tkix].item()
                                     else:
@@ -65,7 +65,7 @@ class SUP(MTLDOGTR):
                         if args.rank == 0:
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
-                                    trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split("_")[-1]}"
+                                    trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
 
                                     if trdm_metric_key not in trdm_metric_dct:
                                         trdm_metric_dct[trdm_metric_key] = self.metric_dct[metric_key](output[tk], target[tk])
@@ -82,9 +82,9 @@ class SUP(MTLDOGTR):
                 mean_trdm_metric_dct = {trdm_key : trdm_metric_dct[trdm_key]/len(self.tr_loaders) for trdm_key in trdm_metric_dct}
 
                 for trdm_key in mean_trdm_loss_dct:
-                    self.__run.log({trdm_key: mean_trdm_loss_dct[trdm_key], "epoch": epoch})
+                    self.__run.log({trdm_key: mean_trdm_loss_dct[trdm_key], 'epoch': epoch})
                 for trdm_key in mean_trdm_metric_dct:   
-                    self.__run.log({trdm_key: mean_trdm_metric_dct[trdm_key], "epoch": epoch})
+                    self.__run.log({trdm_key: mean_trdm_metric_dct[trdm_key], 'epoch': epoch})
             
             self.agent.eval()
             if args.rank == 0:
@@ -112,7 +112,7 @@ class SUP(MTLDOGTR):
                                         train_txt = 'train' if teld.dataset.train is True else 'test'
                                         inout_txt = 'in' if tedm_idx in args.trdms else 'out'
 
-                                        tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split("_")[-1]}"
+                                        tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
                                         if tedm_loss_key not in tedm_loss_dct:
                                             tedm_loss_dct[tedm_loss_key] = losses[tkix].item()
                                         else:
@@ -124,7 +124,7 @@ class SUP(MTLDOGTR):
                                         train_txt = 'train' if teld.dataset.train is True else 'test'
                                         inout_txt = 'in' if tedm_idx in args.trdms else 'out'
                                         
-                                        tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split("_")[-1]}"
+                                        tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                         if tedm_metric_key not in tedm_metric_dct:
                                             tedm_metric_dct[tedm_metric_key] = self.metric_dct[metric_key](output[tk], target[tk])
                                         else:
@@ -134,9 +134,9 @@ class SUP(MTLDOGTR):
                 mean_tedm_metric_dct = {tedm_key : tedm_metric_dct[tedm_key]/len(self.tr_loaders) for tedm_key in tedm_metric_dct}
 
                 for tedm_key in mean_tedm_loss_dct:
-                    self.__run.log({tedm_key: mean_tedm_loss_dct[tedm_key], "epoch": epoch})
+                    self.__run.log({tedm_key: mean_tedm_loss_dct[tedm_key], 'epoch': epoch})
                 for tedm_key in mean_tedm_metric_dct:
-                    self.__run.log({tedm_key: mean_tedm_metric_dct[tedm_key], "epoch": epoch})
+                    self.__run.log({tedm_key: mean_tedm_metric_dct[tedm_key], 'epoch': epoch})
             
             scheduler.step()
         self.cleanup()

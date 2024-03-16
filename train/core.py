@@ -43,7 +43,7 @@ class MTLDOGTR:
         self.gen_func = torch.Generator().manual_seed(self.args.seed)
     
     def prepare_device(self):
-        if torch.cuda.is_available():
+        if not torch.cuda.is_available():
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(self.args.dvids)
 
             self.args.ngpus = torch.cuda.device_count()

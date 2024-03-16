@@ -1,1 +1,1 @@
-from psnr import *
+from .psnr import *
