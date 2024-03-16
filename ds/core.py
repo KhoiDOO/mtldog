@@ -21,7 +21,7 @@ class MTLDOGDS(Dataset):
         self.dt = root_dir
         self.dm = domain
         self.tks = tasks
-        self.train = train
+        self.tr = train
         self.def_dms = default_domains
         self.def_tks = default_tasks
         self.dm2idx = dm2idx
