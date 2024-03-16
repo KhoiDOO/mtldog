@@ -1,23 +1,23 @@
-import os, sys
-sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
-import torch
 from typing import *
 from argparse import Namespace
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
+import os, sys
+import torch
 import wandb
 import random
 import numpy as np
 import json
 import hashlib
-
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
-
+sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
 import ds
 import arch
 import algo
 import loss
 import metric
+import torch.distributed as dist
+
 
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
@@ -64,7 +64,7 @@ class MTLDOGTR:
         self.tr_loaders = []
         self.te_loaders = []
 
-        for trds, teds in zip(tr_dss, te_dss):
+        for idx, trds, teds in enumerate(zip(tr_dss, te_dss)):
             tr_sampler = DistributedSampler(trds)
             te_sampler = DistributedSampler(teds)
             per_device_bs = self.args.bs // self.args.world_size
@@ -72,8 +72,12 @@ class MTLDOGTR:
             trl = DataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler, generator=self.gen_func)
             tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=te_sampler, generator=self.gen_func)
 
-            self.tr_loaders.append(trl)
-            self.te_loaders.append(tel)
+            if idx in self.args.trdms:
+                self.tr_loaders.append(trl)
+                self.te_loaders.append(tel)
+            else:
+                self.te_loaders.append(trl)
+                self.te_loaders.append(tel)
 
     def prepare_save_dir(self):
         main_dir = os.getcwd()
@@ -128,6 +132,10 @@ class MTLDOGTR:
         loss_map = vars(loss)
         self.loss_dct = {k : loss_map[k] for k in loss_map if 'loss' in k and k.split('_')[-1] in self.args.losses and k.split('_')[-2] in self.args.tkss}
     
+    def prepare_metric(self):
+        metric_map = vars(metric)
+        self.metric_dct = {k : metric_map[k] for k in metric_map if 'metric' in k and k.split('_')[-2] in self.args.tkss}
+    
     
     def log_wbmodel(self):
         best_path = self.args.save_dir + f'/best.pt'
@@ -156,3 +164,7 @@ class MTLDOGTR:
     
     def run(self):
         not NotImplementedError()
+    
+    @staticmethod
+    def cleanup():
+        dist.destroy_process_group()
