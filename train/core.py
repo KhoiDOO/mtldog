@@ -1,7 +1,5 @@
 from typing import *
 from argparse import Namespace
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
 import os, sys
 import torch
@@ -18,30 +16,20 @@ import loss
 import metric
 import torch.distributed as dist
 
-
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
         self.args = args
 
-        self.prepare_seed()
         self.prepare_device()
         self.prepare_ds()
         self.prepare_save_dir()
         self.prepare_algo()
-        self.prepare_wandb()
+        if self.args.wandb:
+            self.prepare_wandb()
 
         self.prepare_loss()
+        self.prepare_metric()
 
-    def prepare_seed(self):
-        random.seed(self.args.seed)
-        np.random.seed(self.args.seed)
-        torch.manual_seed(self.args.seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-        self.gen_func = torch.Generator().manual_seed(self.args.seed)
-    
     def prepare_device(self):
         if torch.cuda.is_available():
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(self.args.dvids)
@@ -57,27 +45,11 @@ class MTLDOGTR:
         ds_map = vars(ds)
         self.ds_dct = {k : ds_map[k] for k in ds_map if 'ds' in k}
 
-        self.args, tr_dss, te_dss = self.ds_dct[f'ds_{self.args.ds}'](self.args)
+        self.args, self.tr_dss, self.te_dss = self.ds_dct[f'ds_{self.args.ds}'](self.args)
 
         assert self.args.bs % self.args.world_size == 0
 
-        self.tr_loaders = []
-        self.te_loaders = []
-
-        for idx, trds, teds in enumerate(zip(tr_dss, te_dss)):
-            tr_sampler = DistributedSampler(trds)
-            te_sampler = DistributedSampler(teds)
-            per_device_bs = self.args.bs // self.args.world_size
-
-            trl = DataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler, generator=self.gen_func)
-            tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=te_sampler, generator=self.gen_func)
-
-            if idx in self.args.trdms:
-                self.tr_loaders.append(trl)
-                self.te_loaders.append(tel)
-            else:
-                self.te_loaders.append(trl)
-                self.te_loaders.append(tel)
+        self.args.task_num = len(self.args.tkss)
 
     def prepare_save_dir(self):
         main_dir = os.getcwd()
@@ -86,7 +58,7 @@ class MTLDOGTR:
         if not os.path.exists(run_dir):
             os.mkdir(run_dir)
         
-        self.method_dir = run_dir + f'/{self.args.method}'
+        self.method_dir = run_dir + f'/{self.args.m}'
         if not os.path.exists(self.method_dir):
             os.mkdir(self.method_dir)
         
@@ -110,17 +82,10 @@ class MTLDOGTR:
         self.model_dct = {k : model_map[k] for  k in model_map if 'model' in k}
         self.model = self.model_dct[f'model_{self.args.model}']()
 
-        class Agent(self.model, self.algo):
-            def __init__(self, args):
-                super().__init__(args)
-        
-        self.agent = Agent(self.args)
-    
-
     def prepare_wandb(self):
-        self.args.run_name = f'{self.args.method}__{self.args.ds}__{self.args.hashcode}'
+        self.args.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
-        self.__run = wandb.init(
+        self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
             config=self.args,
@@ -152,7 +117,7 @@ class MTLDOGTR:
 
         
     def get_hash(self):
-        args_str = json.dumps(self.args, sort_keys=True)
+        args_str = json.dumps(vars(self.args), sort_keys=True)
         args_hash = hashlib.md5(args_str.encode('utf-8')).hexdigest()
 
         return args_hash

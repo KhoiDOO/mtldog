@@ -1,6 +1,8 @@
 """main.py - CLI Interaction"""
 
 import argparse
+import random, torch, os
+import numpy as np
 
 
 if __name__ == "__main__":
@@ -39,10 +41,27 @@ if __name__ == "__main__":
     # logging
     parser.add_argument('--wandb', action='store_true', help='toggle to use wandb for online saving')
     parser.add_argument('--log', action='store_true', help='toggle to use tensorboard for offline saving')
-    parser.add_argument('--wandb_prj', type=str, required=True, help='wandb project name')
-    parser.add_argument('--wandb_entity', type=str, required=True, help='wandb entity name')
+    parser.add_argument('--wandb_prj', type=str, required=False, help='wandb project name')
+    parser.add_argument('--wandb_entity', type=str, required=False, help='wandb entity name')
 
     # focal loss
     parser.add_argument('--gamma', type=float, default=1, help='gamma for focal loss')
 
     args = parser.parse_args()
+
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    gen_func = torch.Generator().manual_seed(args.seed)
+
+    if args.tm == 'sup':
+        from train import SUP
+        trainer = SUP(args=args)
+    else:
+        raise ValueError(f"training mode {args.tm} is not available")
+
+    trainer.run()

@@ -47,14 +47,17 @@ class MNIST(MTLDOGDS):
 
         self.transform = transforms.Compose(
             [
-                transforms.ToPILImage(),
-                transforms.Lambda(lambda x: rotate(x, self.dm, fill=(0,), interpolation=torchvision.transforms.InterpolationMode.BILINEAR)),
+                transforms.ToPILImage(), 
+                self.rotate_img,
                 transforms.ToTensor()
             ]
         )
     
+    def rotate_img(self, x):
+        return rotate(x, self.dm, fill=(0,), interpolation=torchvision.transforms.InterpolationMode.BILINEAR)
+    
     def __len__(self) -> int:
-        return len(self.src_data)
+        return len(self.data)
 
     def __getitem__(self, index: int) -> tuple[Tensor, Dict[str, Tensor]]:
         img = self.transform(self.data[index])
@@ -63,9 +66,9 @@ class MNIST(MTLDOGDS):
 
         for tk in self.tks:
             if tk == 'rec':
-                tsk_dct[tk] == img
+                tsk_dct[tk] = img
             elif tk == 'cls':
-                tsk_dct[tk] == self.labl[index]
+                tsk_dct[tk] = self.labl[index]
 
         return img, tsk_dct
     
@@ -98,7 +101,7 @@ def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
     for i, dmidx in enumerate(DOMAIN_IDX):
         tr_dss.append(
             MNIST(
-                root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=True, 
+                root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=True, 
                 src_data=ori_tr_imgs[i::len(DOMAIN_IDX)],
                 src_labl=ori_tr_lbls[i::len(DOMAIN_IDX)]
             )
@@ -106,7 +109,7 @@ def ds_mnist(args: Namespace) -> tuple[List[MNIST], List[MNIST]]:
 
         te_dss.append(
             MNIST(
-                root_dir=args.dt, domain=dmidx, tasks=args.trtks, train=False, 
+                root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=False, 
                 src_data=ori_te_imgs[i::len(DOMAIN_IDX)],
                 src_labl=ori_te_lbls[i::len(DOMAIN_IDX)]
             )

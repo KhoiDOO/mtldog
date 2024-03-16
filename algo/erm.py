@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import List
+from torch import Tensor
 from .core import MTLDOGALGO
 
 import torch
@@ -9,7 +9,7 @@ class ERM(MTLDOGALGO):
     def __init__(self):
         super().__init__()
 
-    def backward(self, losses: List, args: Namespace):
+    def backward(self, losses: Tensor):
         total_loss = torch.sum(losses)
         total_loss.backward()
 

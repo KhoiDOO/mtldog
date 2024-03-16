@@ -4,6 +4,13 @@ from argparse import Namespace
 import torch
 import torch.nn.functional as F
 
+class GlobalAvgPooling(nn.Module):
+    def __init__(self):
+        super(GlobalAvgPooling, self).__init__()
+
+    def forward(self, x):
+        return x.mean(dim=(2, 3))
+
 class MNIST_HPS_AE_BASE_ENCODER(nn.Module):
     def __init__(self, args:Namespace) -> nn.Module:
         super(MNIST_HPS_AE_BASE_ENCODER, self).__init__()
@@ -32,7 +39,7 @@ class MNIST_HPS_CLS_AE_BASE_DECODER(nn.Module):
 
         self.args = args
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.avgpool = GlobalAvgPooling()
         self.classifier = nn.Sequential(
             nn.Linear(128, 64),
             nn.ReLU(),
