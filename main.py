@@ -1,13 +1,12 @@
 """main.py - CLI Interaction"""
 
 import argparse
-import random, torch, os
+import random, torch
 import numpy as np
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-                    prog='MTLDOG - Domain Generalization for Multi-task Learning')
+    parser = argparse.ArgumentParser(prog='MTLDOG - Domain Generalization for Multi-task Learning')
 
     # dataset
     parser.add_argument('--ds', type=str, required=True, help='dataset in use')
