@@ -55,9 +55,6 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-    gen_func = torch.Generator().manual_seed(args.seed)
-
     if args.tm == 'sup':
         from train import SUP
         trainer = SUP(args=args)
