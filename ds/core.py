@@ -26,6 +26,7 @@ class MTLDOGDS(Dataset):
         self.def_tks = default_tasks
         self.dm2idx = dm2idx
         self.idx2dm = {self.dm2idx[key] : key for key in self.dm2idx}
+        self.dmtxt = self.idx2dm[self.dm]
 
         self.check_dm()
         self.check_tk()
@@ -58,8 +59,12 @@ class MTLDOGDS(Dataset):
         raise NotImplementedError()
 
     @property
-    def domain(self):
+    def domain_idx(self):
         return self.dm
+    
+    @property
+    def domain_txt(self):
+        return self.dmtxt
 
     @property
     def tasks(self):
