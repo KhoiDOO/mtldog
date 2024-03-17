@@ -1,1 +1,2 @@
-from .mnist import ds_mnist
+from .mnist import *
+from .mnist_extra import *
