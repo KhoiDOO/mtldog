@@ -63,8 +63,7 @@ class SUP(MTLDOGTR):
             
             for trld in tr_loaders:
                 trld.sampler.set_epoch(epoch)
-                trdm_idx = trld.dataset.domain
-                trdm_txt = trld.dataset.idx2dm[trdm_idx]
+                trdm_txt = trld.dataset.dmtxt
                 
                 for (input, target) in trld:
                     
@@ -103,8 +102,7 @@ class SUP(MTLDOGTR):
             if args.rank == 0:
                 for teld in te_loaders:
                     teld.sampler.set_epoch(epoch)
-                    tedm_idx = teld.dataset.domain
-                    tedm_txt = teld.dataset.idx2dm[tedm_idx]
+                    tedm_txt = teld.dataset.dmtxt
 
                     for (input, target) in teld:
                         losses = torch.zeros(len(args.tkss)).cuda(gpu)
