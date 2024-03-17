@@ -1,20 +1,13 @@
 from typing import *
 from argparse import Namespace
+from statistics import mean
 
-import os, sys
-import torch
-import wandb
-import random
-import numpy as np
-import json
-import hashlib
+import os, sys, torch, wandb
+import json, hashlib
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
-import ds
-import arch
-import algo
-import loss
-import metric
+import ds, arch, algo, loss, metric
 import torch.distributed as dist
+
 
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
@@ -93,10 +86,13 @@ class MTLDOGTR:
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
+            group="DDP",
             config=config_dict,
             name=self.args.run_name,
             force=True
         )
+
+        self.log_dict = {}
     
     def prepare_loss(self):
         loss_map = vars(loss)
@@ -106,26 +102,44 @@ class MTLDOGTR:
         metric_map = vars(metric)
         self.metric_dct = {k : metric_map[k] for k in metric_map if 'metric' in k and k.split('_')[-2] in self.args.tkss}
     
-    
     def log_wbmodel(self):
         best_path = self.args.save_dir + f'/best.pt'
         if os.path.exists(best_path):
-            self.__run.log_model(path=best_path, name=f'{self.args.run_name}-best-model')
+            self.logrun.log_model(path=best_path, name=f'{self.args.run_name}-best-model')
         else:
             raise Exception(f'best model path is not exist at {best_path}')
         
         last_path = self.args.save_dir + f'/last.pt'
         if os.path.exists(last_path):
-            self.__run.log_model(path=last_path, name=f'{self.args.run_name}-last-model')
+            self.logrun.log_model(path=last_path, name=f'{self.args.run_name}-last-model')
         else:
             raise Exception(f'last model path is not exist at {last_path}')
 
-        
     def get_hash(self):
         args_str = json.dumps(vars(self.args), sort_keys=True)
         args_hash = hashlib.md5(args_str.encode('utf-8')).hexdigest()
-
         return args_hash
+    
+    def track(self, key: str, value: float):
+        if key in self.log_dict:
+            self.log_dict[key].append(value)
+        else:
+            self.log_dict[key] = [value]
+        
+    def sync(self, epoch: int):
+        mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
+        for key, value in mean_log_dict.items():
+            self.logrun.log({key : value}, step=epoch)
+        self.log_dict = {}
+    
+    def show_log_dict(self, epoch: int, stage:str):
+        _stage = "TRANING" if stage == 'train' else "EVALUATION"
+        print(f"EPOCH: {epoch} ~~~ {_stage}")
+        print("{:<10} {:<10}".format('KEY', 'VALUE'))
+        mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
+        for key, value in mean_log_dict.items():
+            print("{:<10} {:<10}".format(key, value))
+        self.log_dict = {}
 
     @staticmethod
     def save_json(dct, path):
