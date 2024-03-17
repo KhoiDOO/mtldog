@@ -8,7 +8,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from alive_progress import alive_it
-from statistics import mean
 
 import torch
 import torch.multiprocessing as mp
@@ -33,7 +32,7 @@ class SUP(MTLDOGTR):
         for idx, (trds, teds) in enumerate(zip(self.tr_dss, self.te_dss)):
             tr_sampler = DistributedSampler(trds)
             te_sampler = DistributedSampler(teds)
-            per_device_bs = self.args.bs // self.args.world_size
+            per_device_bs = args.bs // args.world_size
 
             trl = DataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
             tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=te_sampler)
@@ -89,7 +88,6 @@ class SUP(MTLDOGTR):
                                 if tk in metric_key:
                                     trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
-
                     
                     optimizer.zero_grad()
                     sol_grad = agent.module.backward(losses=losses)
@@ -99,7 +97,7 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     self.sync(epoch=epoch)
                 else:
-                    self.show_log_dict()
+                    self.show_log_dict(epoch=epoch, stage='TRAINING')
             
             agent.eval()
             if args.rank == 0:
@@ -118,14 +116,15 @@ class SUP(MTLDOGTR):
                             output: Dict[str, Tensor] = agent(input)
 
                             for tkix, tk in enumerate(output):
+                                
                                 for loss_key in self.loss_dct:
                                     if tk in loss_key:
                                         losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
-
+                                        
                                         train_txt = 'train' if teld.dataset.tr is True else 'test'
                                         inout_txt = 'in' if tedm_idx in args.trdms else 'out'
-
                                         tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
+                                        
                                         self.track(tedm_loss_key, losses[tkix].item())
 
                                 for metric_key in self.metric_dct:
@@ -133,13 +132,14 @@ class SUP(MTLDOGTR):
                                         
                                         train_txt = 'train' if teld.dataset.tr is True else 'test'
                                         inout_txt = 'in' if tedm_idx in args.trdms else 'out'
-                                        
                                         tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                         
                                         self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                 
                 if args.wandb:
                     self.sync(epoch=epoch)
+                else:
+                    self.show_log_dict(epoch=epoch, stage='EVALUATION')
             
             scheduler.step()
         self.cleanup()

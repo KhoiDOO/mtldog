@@ -19,7 +19,7 @@ class MTLDOGTR:
         self.prepare_algo()
         if self.args.wandb:
             self.prepare_wandb()
-
+        self.prepare_log()
         self.prepare_loss()
         self.prepare_metric()
 
@@ -92,7 +92,9 @@ class MTLDOGTR:
             force=True
         )
 
+    def prepare_log(self):
         self.log_dict = {}
+        self.log_grad_dict = {}
     
     def prepare_loss(self):
         loss_map = vars(loss)
@@ -128,17 +130,15 @@ class MTLDOGTR:
         
     def sync(self, epoch: int):
         mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
-        for key, value in mean_log_dict.items():
-            self.logrun.log({key : value}, step=epoch)
+        self.logrun.log(mean_log_dict, step=epoch)
         self.log_dict = {}
     
     def show_log_dict(self, epoch: int, stage:str):
-        _stage = "TRANING" if stage == 'train' else "EVALUATION"
-        print(f"EPOCH: {epoch} ~~~ {_stage}")
-        print("{:<10} {:<10}".format('KEY', 'VALUE'))
+        print(f"EPOCH: {epoch} ~~~ {stage}")
+        print("{:<20} {:<20}".format('KEY', 'VALUE'))
         mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
         for key, value in mean_log_dict.items():
-            print("{:<10} {:<10}".format(key, value))
+            print("{:<20} {:<20}".format(key, value))
         self.log_dict = {}
 
     @staticmethod
