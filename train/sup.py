@@ -54,9 +54,9 @@ class SUP(MTLDOGTR):
         scheduler = CosineAnnealingLR(optimizer, T_max=args.epoch)
 
         if args.rank == 0:
-            bar = alive_it(range(args.epoch))
+            bar = alive_it(range(1, args.epoch + 1), length = 80)
         else:
-            bar = range(args.epoch)
+            bar = range(1, args.epoch + 1)
 
         for epoch in bar:
             agent.train()
@@ -90,54 +90,54 @@ class SUP(MTLDOGTR):
                                     self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
                     
                     optimizer.zero_grad()
-                    sol_grad = agent.module.backward(losses=losses)
+                    grad, sol_grad = agent.module.backward(losses=losses)
                     optimizer.step()
             
             if args.rank == 0:
                 if args.wandb:
-                    self.sync(epoch=epoch)
+                    self.sync()
                 else:
                     self.show_log_dict(epoch=epoch, stage='TRAINING')
             
             agent.eval()
             if args.rank == 0:
-                with torch.no_grad():
+                for teld in te_loaders:
+                    teld.sampler.set_epoch(epoch)
+                    tedm_idx = teld.dataset.domain
+                    tedm_txt = teld.dataset.idx2dm[tedm_idx]
 
-                    for teld in te_loaders:
-                        teld.sampler.set_epoch(epoch)
-                        tedm_idx = teld.dataset.domain
-                        tedm_txt = teld.dataset.idx2dm[tedm_idx]
+                    for (input, target) in teld:
+                        losses = torch.zeros(len(args.tkss)).cuda(gpu)
+                        
+                        input: Tensor = input.cuda(gpu)
+                        target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
+                        output: Dict[str, Tensor] = agent(input)
 
-                        for (input, target) in teld:
-                            losses = torch.zeros(len(args.tkss)).cuda(gpu)
+                        for tkix, tk in enumerate(output):
                             
-                            input: Tensor = input.cuda(gpu)
-                            target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
-                            output: Dict[str, Tensor] = agent(input)
+                            for loss_key in self.loss_dct:
+                                if tk in loss_key:
+                                    losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
+                                    
+                                    train_txt = 'train' if teld.dataset.tr is True else 'test'
+                                    inout_txt = 'in' if tedm_idx in args.trdms else 'out'
+                                    tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
+                                    
+                                    self.track(tedm_loss_key, losses[tkix].item())
 
-                            for tkix, tk in enumerate(output):
-                                
-                                for loss_key in self.loss_dct:
-                                    if tk in loss_key:
-                                        losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
-                                        
-                                        train_txt = 'train' if teld.dataset.tr is True else 'test'
-                                        inout_txt = 'in' if tedm_idx in args.trdms else 'out'
-                                        tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                        
-                                        self.track(tedm_loss_key, losses[tkix].item())
-
-                                for metric_key in self.metric_dct:
-                                    if tk in metric_key:
-                                        
-                                        train_txt = 'train' if teld.dataset.tr is True else 'test'
-                                        inout_txt = 'in' if tedm_idx in args.trdms else 'out'
-                                        tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
-                                        
-                                        self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
+                            for metric_key in self.metric_dct:
+                                if tk in metric_key:
+                                    
+                                    train_txt = 'train' if teld.dataset.tr is True else 'test'
+                                    inout_txt = 'in' if tedm_idx in args.trdms else 'out'
+                                    tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
+                                    
+                                    self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
+                        
+                        grad, sol_grad = agent.module.backward(losses=losses)
                 
                 if args.wandb:
-                    self.sync(epoch=epoch)
+                    self.sync()
                 else:
                     self.show_log_dict(epoch=epoch, stage='EVALUATION')
             

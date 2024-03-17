@@ -128,17 +128,17 @@ class MTLDOGTR:
         else:
             self.log_dict[key] = [value]
         
-    def sync(self, epoch: int):
+    def sync(self):
         mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
-        self.logrun.log(mean_log_dict, step=epoch)
+        self.logrun.log(mean_log_dict)
         self.log_dict = {}
     
     def show_log_dict(self, epoch: int, stage:str):
         print(f"EPOCH: {epoch} ~~~ {stage}")
-        print("{:<20} {:<20}".format('KEY', 'VALUE'))
+        print("{:<40} {:<40}".format('KEY', 'VALUE'))
         mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
         for key, value in mean_log_dict.items():
-            print("{:<20} {:<20}".format(key, value))
+            print("{:<40} {:<40}".format(key, value))
         self.log_dict = {}
 
     @staticmethod
