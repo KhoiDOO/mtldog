@@ -2,6 +2,7 @@ from .core import MTLDOGARCH
 from . import subnet
 from torch import Tensor
 from torch.nn import ModuleDict
+from typing import Dict, List
 
 VAR_SUBNET = vars(subnet)
 MODEL_MAP = {x : VAR_SUBNET[x] for x in VAR_SUBNET if 'arch' in x}
@@ -19,7 +20,7 @@ class HPS(MTLDOGARCH):
         enc_key = f'arch_{ds}_{model}_{arch_type}_{backbone}_encoder'
         if enc_key not in MODEL_MAP:
             raise ValueError(f"encoder architecture key {enc_key} is not available in {[x for x in MODEL_MAP.keys() if 'encoder' in x]}")
-        self.encoder = MODEL_MAP[enc_key](args)
+        self.encoder: MTLDOGARCH = MODEL_MAP[enc_key](args)
 
         self.decoder = ModuleDict()
         for tk in self.args.tkss:
@@ -30,11 +31,17 @@ class HPS(MTLDOGARCH):
             # self.decoder[tk] = MODEL_MAP[dec_key]
             self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key](args))
 
-    def get_share_params(self):
+    def get_share_params(self) -> List[Tensor]:
         return self.encoder.parameters()
+
+    def get_heads_params(self) -> Dict[str, List[Tensor]]:
+        return {tk : self.decoder[tk].parameters() for tk in self.decoder}
 
     def zero_grad_share_params(self):
         self.encoder.zero_grad()
+    
+    def zero_grad_heads_params(self):
+        self.decoder.zero_grad()
     
     def forward(self, x: Tensor) -> Tensor:
         enclat = self.encoder(x)
