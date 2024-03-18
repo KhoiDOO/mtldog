@@ -1,6 +1,7 @@
 from typing import *
 from argparse import Namespace
 from statistics import mean
+from torch import Tensor
 
 import os, sys, torch, wandb
 import json, hashlib
@@ -133,8 +134,8 @@ class MTLDOGTR:
         self.logrun.log(mean_log_dict)
         self.log_dict = {}
     
-    def track_grad():
-        pass
+    def track_grad(self, key: str, value: Dict[str, Tensor]):
+        self.log_grad_dict[key] = value
 
     def sync_grad():
         pass

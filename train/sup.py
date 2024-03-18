@@ -59,38 +59,49 @@ class SUP(MTLDOGTR):
             bar = range(1, args.epoch + 1)
 
         for epoch in bar:
-            agent.train()
-            
-            for trld in tr_loaders:
-                trld.sampler.set_epoch(epoch)
-                trdm_txt = trld.dataset.domain_txt
+
+            trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
+
+            # Training
+            for trdm_batchs in zip(*tr_loaders):
+                agent.train()
+                for trld in tr_loaders:
+                    trld.sampler.set_epoch(epoch)
                 
-                for (input, target) in trld:
-                    
-                    losses = torch.zeros(len(args.tkss)).cuda(gpu)
-                    
+                losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
+                
+                for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
+                    input, target = trdmb
                     input: Tensor = input.cuda(gpu)
                     target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                     output: Dict[str, Tensor] = agent(input)
 
-                    for tkix, tk in enumerate(output):
+                    for tkix, tk in enumerate(args.tkss):
                         for loss_key in self.loss_dct:
                             if tk in loss_key:
-                                losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
+                                losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk])
 
                                 if args.rank == 0:
                                     trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(trdm_loss_key, losses[tkix].item())
+                                    self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
                         
-                        if args.rank == 0:
+                optimizer.zero_grad()
+                grad_dict = agent.module.backward(losses=losses)
+                optimizer.step()
+
+                if args.rank == 0:
+                    agent.eval()
+                    for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
+                        input, target = trdmb
+                        input: Tensor = input.cuda(gpu)
+                        target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
+                        output: Dict[str, Tensor] = agent(input)
+                        
+                        for tk in args.tkss:
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
                                     trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
-                    
-                    optimizer.zero_grad()
-                    grad, sol_grad = agent.module.backward(losses=losses)
-                    optimizer.step()
             
             if args.rank == 0:
                 if args.wandb:
@@ -98,16 +109,21 @@ class SUP(MTLDOGTR):
                 else:
                     self.show_log_dict(epoch=epoch, stage='TRAINING')
             
+            # Evaluation
             agent.eval()
             if args.rank == 0:
-                for teld in te_loaders:
-                    teld.sampler.set_epoch(epoch)
-                    tedm_idx = teld.dataset.domain_idx
-                    tedm_txt = teld.dataset.domain_txt
 
-                    for (input, target) in teld:
-                        losses = torch.zeros(len(args.tkss)).cuda(gpu)
-                        
+                tedm_idxs = [teld.dataset.domain_idx for teld in te_loaders]
+                tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
+
+                for teld_batchs in zip(*te_loaders):
+                    for teld in te_loaders:
+                        teld.sampler.set_epoch(epoch)
+
+                        losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in tedm_txts}
+
+                    for tedmb, tedm_idx, tedm_txt in zip(teld_batchs, tedm_idxs, tedm_txts):
+                        input, target = tedmb
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                         output: Dict[str, Tensor] = agent(input)
@@ -116,13 +132,13 @@ class SUP(MTLDOGTR):
                             
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
-                                    losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk])
+                                    losses[tedm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk])
                                     
                                     train_txt = 'train' if teld.dataset.tr is True else 'test'
                                     inout_txt = 'in' if tedm_idx in args.trdms else 'out'
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
                                     
-                                    self.track(tedm_loss_key, losses[tkix].item())
+                                    self.track(tedm_loss_key, losses[tedm_txt][tkix].item())
 
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
@@ -133,7 +149,7 @@ class SUP(MTLDOGTR):
                                     
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                         
-                        grad, sol_grad = agent.module.backward(losses=losses)
+                        grad_dict = agent.module.backward(losses=losses)
                 
                 if args.wandb:
                     self.sync()
