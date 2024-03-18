@@ -13,6 +13,12 @@ class MTLDOGARCH(nn.Module):
     
     def get_share_params(self):
         raise NotImplementedError()
+    
+    def get_heads_params(self):
+        raise NotImplementedError()
 
     def zero_grad_share_params(self):
+        raise NotImplementedError()
+
+    def zero_grad_heads_params(self):
         raise NotImplementedError()
