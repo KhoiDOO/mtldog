@@ -133,6 +133,12 @@ class MTLDOGTR:
         self.logrun.log(mean_log_dict)
         self.log_dict = {}
     
+    def track_grad():
+        pass
+
+    def sync_grad():
+        pass
+    
     def show_log_dict(self, epoch: int, stage:str):
         print(f"EPOCH: {epoch} ~~~ {stage}")
         print("{:<40} {:<40}".format('KEY', 'VALUE'))
