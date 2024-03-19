@@ -11,10 +11,10 @@ class MTLDOGARCH(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         raise NotImplementedError()
     
-    def get_share_params(self) -> List[Tensor]:
+    def get_share_params(self) -> Tensor[..., Tensor]:
         raise NotImplementedError()
     
-    def get_heads_params(self) -> Dict[str, Tensor]:
+    def get_heads_params(self) -> Dict[str, Tensor[..., Tensor]]:
         raise NotImplementedError()
 
     def zero_grad_share_params(self) -> None:
