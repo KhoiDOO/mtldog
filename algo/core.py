@@ -11,6 +11,8 @@ class MTLDOGALGO(nn.Module):
         super(MTLDOGALGO, self).__init__()
 
     def init_param(self, args: Namespace):
+        self.args = args
+        self.tkss = args.tkss
         self.train_loss_buffer = np.zeros([args.task_num, args.epochs])
         self.hparams_path = args.hp
         self.params = json.load(open(self.hparams_path, 'r'))
@@ -34,48 +36,92 @@ class MTLDOGALGO(nn.Module):
         
         self.grad_dim_heads : Dict[str, List[int]] = {head : sum(self.grad_index_heads[head]) for head in self.grad_index_heads}
 
-    def grad2vec_share(self):
-        grad = torch.zeros(self.grad_dim)
+    def grad2vec_share(self) -> Tensor:
+        grad = torch.zeros(self.grad_dim_share)
         count = 0
         for param in self.get_share_params():
             if param.grad is not None:
-                beg = 0 if count == 0 else sum(self.grad_index[:count])
-                end = sum(self.grad_index[:(count+1)])
+                beg = 0 if count == 0 else sum(self.grad_index_share[:count])
+                end = sum(self.grad_index_share[:(count+1)])
                 grad[beg:end] = param.grad.data.view(-1)
             count += 1
         return grad
+
+    def grad2vec_heads(self, head:str) -> Tensor:
+        grad = torch.zeros(self.grad_dim_heads[head])
+        for param in self.get_heads_params()[head]:
+            if param.grad is not None:
+                beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count])
+                end = sum(self.grad_index_heads[head][:(count+1)])
+                grad[head][beg:end] = param.grad.data.view(-1)
+            count += 1
+        return grad
     
-    def compute_grad_share(self, losses: Tensor, mode: str):
-        grads = torch.zeros(self.task_num, self.grad_dim).to(self.device)
-        for tn in range(self.task_num):
+    def compute_grad_share(self, losses: Tensor, mode: str) -> Tensor[Tensor]:
+        grads = torch.zeros(self.task_num, self.grad_dim_share).to(self.device)
+        
+        for tkidx in range(self.task_num):
             if mode == 'backward':
-                losses[tn].backward(retain_graph=True) if (tn+1)!=self.task_num else losses[tn].backward()
-                grads[tn] = self.grad2vec_share()
+                losses[tkidx].backward(retain_graph=True)
+                grads[tkidx] = self.grad2vec_share()
             elif mode == 'autograd':
-                grad = list(torch.autograd.grad(losses[tn], self.get_share_params(), retain_graph=True))
-                grads[tn] = torch.cat([g.view(-1) for g in grad])
+                grad = list(torch.autograd.grad(losses[tkidx], self.get_share_params(), retain_graph=True))
+                grads[tkidx] = torch.cat([g.view(-1) for g in grad])
             else:
-                raise ValueError('No support {} mode for gradient computation')
+                raise ValueError(f'No support {mode} mode for gradient computation')
+            
             self.zero_grad_share_params()
         return grads
     
-    def reset_grad(self, new_grads):
+    def compute_grad_head(self, losses: Tensor, mode: str) -> Tensor[Tensor]:
+        grads = {head : torch.zeros(self.grad_dim_heads[head]) for head in self.grad_dim_heads}
+
+        for tkidx, tk in enumerate(grads):
+            if mode == 'backward':
+                losses[tkidx].backward(retain_graph=True)
+                grads[tk] = self.grad2vec_heads(head=tk)
+            elif mode == 'autograd':
+                grad = list(torch.autograd.grad(losses[tkidx], self.get_heads_params(), retain_graph=True))
+                grads[tk] = torch.cat([g.view(-1) for g in grad])
+            else:
+                raise ValueError(f'No support {mode} mode for gradient computation')
+        
+        self.zero_grad_heads_params()
+    
+    def reset_grad_share(self, new_grads: Tensor):
         count = 0
         for param in self.get_share_params():
             if param.grad is not None:
-                beg = 0 if count == 0 else sum(self.grad_index[:count])
-                end = sum(self.grad_index[:(count+1)])
+                beg = 0 if count == 0 else sum(self.grad_index_share[:count])
+                end = sum(self.grad_index_share[:(count+1)])
                 param.grad.data = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
             count += 1
+    
+    def reset_grad_heads(self, new_grads : Dict[str, Tensor]):
+        count = {tk : 0 for tk in self.tkss}
+
+        for head, params in self.get_heads_params():
+            for param in params:
+                if param.grad is not None:
+                    beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count[head]])
+                    end = sum(self.grad_index_heads[head][:(count[head]+1)])
+                    param.grad.data = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
+                count[head] += 1
         
-    def get_grads(self, losses: Tensor, mode: str='backward'):
-        self._compute_grad_dim()
-        grads = self._compute_grad(losses, mode)
+    def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor[Tensor]:
+        self.compute_grad_dim_share()
+        grads = self.compute_grad_share(losses, mode)
         return grads
     
-    def backward_new_grads(self, batch_weight, grads=None):
+    def get_grads_heads(self, losses: Tensor, mode: str='backward') -> Dict[str, Tensor]:
+        self.compute_grad_dim_heads()
+        grads = self.compute_grad_head(losses, mode)
+        return grads
+
+    
+    def backward_new_grads_share(self, batch_weight, grads=None):
         new_grads = sum([batch_weight[i] * grads[i] for i in range(self.task_num)])
-        self._reset_grad(new_grads)
+        self.reset_grad_share(new_grads)
     
 
     def backward(self, losses: Dict[str, List[Tensor]]):
