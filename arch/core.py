@@ -3,7 +3,7 @@ from torch import nn
 from typing import List, Dict
 
 class MTLDOGARCH(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args) -> nn.Module:
         super().__init__()
         self.args = args
         self.task_num = args.task_num
