@@ -59,17 +59,25 @@ class MTLDOGDS(Dataset):
         raise NotImplementedError()
 
     @property
-    def domain_idx(self):
+    def domain_idx(self) -> int:
         return self.dm
     
     @property
-    def domain_txt(self):
+    def domain_txt(self) -> str:
         return self.dmtxt
+    
+    @property
+    def dm2idx(self) -> Dict[str, int]:
+        return self.dm2idx
 
     @property
-    def tasks(self):
+    def idx2dm(self) -> Dict[int, str]:
+        return self.idx2dm
+
+    @property
+    def tasks(self) -> List[str]:
         return self.tks
 
     @property
-    def train(self):
+    def train(self) -> bool:
         return self.train
