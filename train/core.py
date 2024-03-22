@@ -95,7 +95,7 @@ class MTLDOGTR:
 
     def prepare_log(self):
         self.log: Dict = {}
-        self.share_log_grad: List[Dict[str, Tensor[Tensor]]] = []
+        self.share_log_grad: List[Dict[str, Tensor]] = []
         self.heads_log_grad: List[Dict[str, Dict[str, Tensor]]] = []
         self.sol_share_log_grad: List[Tensor] = []
         self.sol_heads_log_grad: List[Dict[str, Tensor]] = []
@@ -138,7 +138,7 @@ class MTLDOGTR:
         self.log = {}
     
     def track_grad(self,
-                   share_grads: Dict[str, Tensor[Tensor]],
+                   share_grads: Dict[str, Tensor],
                    heads_grads: Dict[str, Dict[str, Tensor]],
                    sol_share_grad: Tensor,
                    sol_head_grad: Dict[str, Tensor]):
