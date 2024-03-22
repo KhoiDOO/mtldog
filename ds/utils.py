@@ -73,6 +73,7 @@ class DistributedInfiniteDataLoader(DataLoader):
         for _ in range(len(self)):
             yield next(self.iterator)
 
+
 class SmartDistributedSampler(DistributedSampler):
     def __iter__(self):
         g = torch.Generator()
