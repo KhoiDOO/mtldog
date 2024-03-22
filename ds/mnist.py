@@ -30,7 +30,7 @@ class MNIST(MTLDOGDS):
                 ) -> MTLDOGDS:
 
         if root_dir is None:
-            root_dir = "/".join(__file__.split("/")[:-1]) + "/source"
+            root_dir = "/".join(__file__.split("/")[:-1]) + "/src"
 
         super(MNIST, self).__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
