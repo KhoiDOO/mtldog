@@ -47,6 +47,9 @@ class SUP(MTLDOGTR):
         class Agent(self.model, self.algo):
             def __init__(self, args):
                 super().__init__(args)
+
+                self.device = gpu
+                self.init_param(args)
         
         agent = Agent(args=args).cuda(gpu)
         agent = DDP(agent, device_ids=[gpu])
@@ -86,7 +89,7 @@ class SUP(MTLDOGTR):
                                     self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
                         
                 optimizer.zero_grad()
-                grad_dict = agent.module.backward(losses=losses)
+                agent.module.backward(losses=losses)
                 optimizer.step()
 
                 if args.rank == 0:
@@ -113,8 +116,9 @@ class SUP(MTLDOGTR):
             agent.eval()
             if args.rank == 0:
 
-                tedm_idxs = [teld.dataset.domain_idx for teld in te_loaders]
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
+                train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
+                inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
 
                 for teld_batchs in zip(*te_loaders):
                     for teld in te_loaders:
@@ -122,20 +126,17 @@ class SUP(MTLDOGTR):
 
                         losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in tedm_txts}
 
-                    for tedmb, tedm_idx, tedm_txt in zip(teld_batchs, tedm_idxs, tedm_txts):
+                    for tedmb, tedm_txt, train_txt, inout_txt in zip(teld_batchs, tedm_txts, train_txts, inout_txts):
                         input, target = tedmb
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                         output: Dict[str, Tensor] = agent(input)
 
                         for tkix, tk in enumerate(output):
-                            
+
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
                                     losses[tedm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk])
-                                    
-                                    train_txt = 'train' if teld.dataset.tr is True else 'test'
-                                    inout_txt = 'in' if tedm_idx in args.trdms else 'out'
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
                                     
                                     self.track(tedm_loss_key, losses[tedm_txt][tkix].item())
@@ -143,13 +144,10 @@ class SUP(MTLDOGTR):
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
                                     
-                                    train_txt = 'train' if teld.dataset.tr is True else 'test'
-                                    inout_txt = 'in' if tedm_idx in args.trdms else 'out'
                                     tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
-                                    
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                         
-                        grad_dict = agent.module.backward(losses=losses)
+                        # grad_dict = agent.module.backward(losses=losses)
                 
                 if args.wandb:
                     self.sync()

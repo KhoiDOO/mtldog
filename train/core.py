@@ -94,8 +94,11 @@ class MTLDOGTR:
         )
 
     def prepare_log(self):
-        self.log_dict = {}
-        self.log_grad_dict = {}
+        self.log: Dict = {}
+        self.share_log_grad: List[Dict[str, Tensor[Tensor]]] = []
+        self.heads_log_grad: List[Dict[str, Dict[str, Tensor]]] = []
+        self.sol_share_log_grad: List[Tensor] = []
+        self.sol_heads_log_grad: List[Dict[str, Tensor]] = []
     
     def prepare_loss(self):
         loss_map = vars(loss)
@@ -124,29 +127,44 @@ class MTLDOGTR:
         return args_hash
     
     def track(self, key: str, value: float):
-        if key in self.log_dict:
-            self.log_dict[key].append(value)
+        if key in self.log:
+            self.log[key].append(value)
         else:
-            self.log_dict[key] = [value]
+            self.log[key] = [value]
         
     def sync(self):
-        mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
-        self.logrun.log(mean_log_dict)
-        self.log_dict = {}
+        mean_log = {k : mean(self.log[k]) for k in self.log}
+        self.logrun.log(mean_log)
+        self.log = {}
     
-    def track_grad(self, key: str, value: Dict[str, Tensor]):
-        self.log_grad_dict[key] = value
+    def track_grad(self,
+                   share_grads: Dict[str, Tensor[Tensor]],
+                   heads_grads: Dict[str, Dict[str, Tensor]],
+                   sol_share_grad: Tensor,
+                   sol_head_grad: Dict[str, Tensor]):
+        
+        if share_grads is not None:
+            self.share_log_grad.append(share_grads)
+        
+        if heads_grads is not None:
+            self.heads_log_grad.append(heads_grads)
+        
+        if sol_share_grad is not None:
+            self.sol_share_log_grad.append(sol_share_grad)
+        
+        if sol_head_grad is not None:
+            self.sol_heads_log_grad.append(sol_head_grad)
 
-    def sync_grad():
-        pass
+    def sync_grad(self):
+        raise NotImplementedError()
     
-    def show_log_dict(self, epoch: int, stage:str):
+    def show_log(self, epoch: int, stage:str):
         print(f"EPOCH: {epoch} ~~~ {stage}")
         print("{:<40} {:<40}".format('KEY', 'VALUE'))
-        mean_log_dict = {k : mean(self.log_dict[k]) for k in self.log_dict}
-        for key, value in mean_log_dict.items():
+        mean_log = {k : mean(self.log[k]) for k in self.log}
+        for key, value in mean_log.items():
             print("{:<40} {:<40}".format(key, value))
-        self.log_dict = {}
+        self.log = {}
 
     @staticmethod
     def save_json(dct, path):
