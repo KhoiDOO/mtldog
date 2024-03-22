@@ -77,7 +77,7 @@ class DistributedInfiniteDataLoader(DataLoader):
 class SmartDistributedSampler(DistributedSampler):
     def __iter__(self):
         g = torch.Generator()
-        g.manual_seed(self.seed + self.epoch)
+        g.manual_seed(self.seed + self.round)
 
         n = int((len(self.dataset) - self.rank - 1) / self.num_replicas) + 1
         idx = torch.randperm(n, generator=g)
@@ -95,3 +95,6 @@ class SmartDistributedSampler(DistributedSampler):
                 idx += (idx * math.ceil(padding_size / len(idx)))[:padding_size]
 
         return iter(idx)
+
+    def set_round(self, round):
+        self.round = round
