@@ -61,11 +61,12 @@ class MTLDOGTR:
             os.mkdir(self.ds_dir)
 
         self.args.hashcode = self.get_hash()
-        self.save_dir = self.ds_dir + f"/{self.args.hashcode}"
+        self.args.save_dir = self.save_dir = self.ds_dir + f"/{self.args.hashcode}"
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         
-        self.args.save_dir = self.save_dir
+        self.args.best_model_path = self.best_model_path = self.save_dir + f'/best.pt'
+        self.args.last_model_path = self.last_model_path = self.save_dir + f'/last.pt'
     
     def prepare_algo(self):
         algo_map = vars(algo)
@@ -77,7 +78,7 @@ class MTLDOGTR:
         self.model = self.model_dct[f'model_{self.args.model}']()
 
     def prepare_wandb(self):
-        self.args.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
+        self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
         hparams_path = self.args.hp
         params = json.load(open(hparams_path, 'r'))
@@ -109,17 +110,15 @@ class MTLDOGTR:
         self.metric_dct = {k : metric_map[k] for k in metric_map if 'metric' in k and k.split('_')[-2] in self.args.tkss}
     
     def log_wbmodel(self):
-        best_path = self.args.save_dir + f'/best.pt'
-        if os.path.exists(best_path):
-            self.logrun.log_model(path=best_path, name=f'{self.args.run_name}-best-model')
+        if os.path.exists(self.best_model_path):
+            self.logrun.log_model(path=self.best_model_path, name=f'{self.run_name}-best-model')
         else:
-            raise Exception(f'best model path is not exist at {best_path}')
+            raise Exception(f'best model path is not exist at {self.best_model_path}')
         
-        last_path = self.args.save_dir + f'/last.pt'
-        if os.path.exists(last_path):
-            self.logrun.log_model(path=last_path, name=f'{self.args.run_name}-last-model')
+        if os.path.exists(self.last_model_path):
+            self.logrun.log_model(path=self.last_model_path, name=f'{self.run_name}-last-model')
         else:
-            raise Exception(f'last model path is not exist at {last_path}')
+            raise Exception(f'last model path is not exist at {self.last_model_path}')
 
     def get_hash(self):
         args_str = json.dumps(vars(self.args), sort_keys=True)

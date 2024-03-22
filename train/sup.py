@@ -7,6 +7,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from ds import InfiniteDataLoader, DistributedInfiniteDataLoader
 from alive_progress import alive_it
 
 import torch
