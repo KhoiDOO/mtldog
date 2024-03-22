@@ -3,6 +3,7 @@ from torch.utils.data import Dataset, DataLoader, \
 from torch import Tensor, Generator
 
 import torch
+import math
 
 
 class _InfiniteSampler(Sampler):
@@ -71,3 +72,27 @@ class DistributedInfiniteDataLoader(DataLoader):
     def __iter__(self):
         for _ in range(len(self)):
             yield next(self.iterator)
+
+class SmartDistributedSampler(DistributedSampler):
+    def __iter__(self):
+        """Yields indices for distributed data sampling, shuffled deterministically based on epoch and seed."""
+        g = torch.Generator()
+        g.manual_seed(self.seed + self.epoch)
+
+        # determine the the eventual size (n) of self.indices (DDP indices)
+        n = int((len(self.dataset) - self.rank - 1) / self.num_replicas) + 1  # num_replicas == WORLD_SIZE
+        idx = torch.randperm(n, generator=g)
+        if not self.shuffle:
+            idx = idx.sort()[0]
+
+        idx = idx.tolist()
+        if self.drop_last:
+            idx = idx[: self.num_samples]
+        else:
+            padding_size = self.num_samples - len(idx)
+            if padding_size <= len(idx):
+                idx += idx[:padding_size]
+            else:
+                idx += (idx * math.ceil(padding_size / len(idx)))[:padding_size]
+
+        return iter(idx)
