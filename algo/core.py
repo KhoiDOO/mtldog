@@ -57,7 +57,7 @@ class MTLDOGALGO(nn.Module):
             count += 1
         return grad
     
-    def compute_grad_share(self, losses: Tensor, mode: str) -> Tensor[Tensor]:
+    def compute_grad_share(self, losses: Tensor, mode: str) -> Tensor:
         grads = torch.zeros(self.task_num, self.grad_dim_share).to(self.device)
         
         for tkidx in range(self.task_num):
@@ -73,7 +73,7 @@ class MTLDOGALGO(nn.Module):
             self.zero_grad_share_params()
         return grads
     
-    def compute_grad_head(self, losses: Tensor, mode: str) -> Tensor[Tensor]:
+    def compute_grad_head(self, losses: Tensor, mode: str) -> Tensor:
         grads = {head : torch.zeros(self.grad_dim_heads[head]) for head in self.grad_dim_heads}
 
         for tkidx, tk in enumerate(grads):
@@ -108,7 +108,7 @@ class MTLDOGALGO(nn.Module):
                     param.grad.data = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
                 count[head] += 1
         
-    def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor[Tensor]:
+    def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor:
         self.compute_grad_dim_share()
         grads = self.compute_grad_share(losses, mode)
         return grads
@@ -124,7 +124,7 @@ class MTLDOGALGO(nn.Module):
         self.reset_grad_share(new_grads)
     
 
-    def backward(self, losses: Dict[str, List[Tensor]]):
+    def backward(self, losses: Dict[str, Tensor]):
         raise NotImplementedError()
 
     @property
