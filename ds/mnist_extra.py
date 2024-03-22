@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
-from ds.core import MTLDOGDS
-from ds.mnist import DOMAIN_IDX, DOMAIN_TXT, TASK_TXT
+from .core import MTLDOGDS
+from .mnist import DOMAIN_IDX, DOMAIN_TXT, TASK_TXT
 from .mnist import *
 
-MNISTEASY_DOMAIN_TXT = DOMAIN_TXT[:5]
-MNISTEASY_DOMAIN_IDX = DOMAIN_IDX[:5]
+MNISTEASY_DOMAIN_TXT: List[str] = DOMAIN_TXT[:5]
+MNISTEASY_DOMAIN_IDX: List[int] = DOMAIN_IDX[:5]
 
 class MNISTEASY(MNIST):
     def __init__(self, root_dir: str | None = None, domain: int | None = None, tasks: List[str] | None = None, train: bool = True, 
@@ -15,8 +15,8 @@ class MNISTEASY(MNIST):
                  src_labl: List[Any] = None) -> MTLDOGDS:
         super().__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx, src_data, src_labl)
 
-MNISTMED_DOMAIN_TXT = [str(x) for x in range(0, 60, 6)]
-MNISTMED_DOMAIN_IDX = [x for x in range(0, 60, 6)]
+MNISTMED_DOMAIN_TXT: List[str] = [str(x) for x in range(0, 60, 6)]
+MNISTMED_DOMAIN_IDX: List[int] = [x for x in range(0, 60, 6)]
 
 class MNISTMED(MNIST):
     def __init__(self, root_dir: str | None = None, domain: int | None = None, tasks: List[str] | None = None, train: bool = True, 
