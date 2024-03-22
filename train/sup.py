@@ -42,7 +42,7 @@ class SUP(MTLDOGTR):
             else:
                 te_loaders.append(trl)
                 te_loaders.append(tel)
-
+        
         class Agent(self.model, self.algo):
             def __init__(self, args):
                 super().__init__(args)
@@ -59,53 +59,52 @@ class SUP(MTLDOGTR):
             bar = alive_it(range(args.round), length = 80)
         else:
             bar = range(args.round)
+        
+        trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
 
         for round in bar:
 
-            trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
-
             # Training
-            for trdm_batchs in zip(*tr_loaders):
-                agent.train()
-                for trld in tr_loaders:
-                    trld.sampler.set_epoch(round)
-                
-                losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
-                
+            trdm_batchs = next(zip(*tr_loaders))
+            agent.train()
+            for trld in tr_loaders:
+                trld.sampler.set_epoch(round)
+            
+            losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
+            
+            for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
+                input, target = trdmb
+                input: Tensor = input.cuda(gpu)
+                target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
+                output: Dict[str, Tensor] = agent(input)
+
+                for tkix, tk in enumerate(args.tkss):
+                    for loss_key in self.loss_dct:
+                        if tk in loss_key:
+                            losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+
+                            if args.rank == 0:
+                                trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
+                                self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
+                    
+            optimizer.zero_grad()
+            agent.module.backward(losses=losses)
+            optimizer.step()
+
+            if args.rank == 0:
+                agent.eval()
                 for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
                     input, target = trdmb
                     input: Tensor = input.cuda(gpu)
                     target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                     output: Dict[str, Tensor] = agent(input)
-
-                    for tkix, tk in enumerate(args.tkss):
-                        for loss_key in self.loss_dct:
-                            if tk in loss_key:
-                                losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
-
-                                if args.rank == 0:
-                                    trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
-                        
-                optimizer.zero_grad()
-                agent.module.backward(losses=losses)
-                optimizer.step()
-
-                if args.rank == 0:
-                    agent.eval()
-                    for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
-                        input, target = trdmb
-                        input: Tensor = input.cuda(gpu)
-                        target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
-                        output: Dict[str, Tensor] = agent(input)
-                        
-                        for tk in args.tkss:
-                            for metric_key in self.metric_dct:
-                                if tk in metric_key:
-                                    trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
-                                    self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
-            
-            if args.rank == 0:
+                    
+                    for tk in args.tkss:
+                        for metric_key in self.metric_dct:
+                            if tk in metric_key:
+                                trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
+                                self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
+                
                 if args.wandb:
                     self.sync()
                 else:
@@ -147,7 +146,7 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     self.sync()
                 else:
-                    self.show_log(epoch=epoch, stage='EVALUATION')
+                    self.show_log(round=round, stage='EVALUATION')
             
             scheduler.step()
         self.cleanup()

@@ -6,5 +6,5 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
     --model hps --at ae --bb base \
     --seed 0 --tm sup \
     --dvids 0 \
-    --epoch 1 --lr 0.001 \
+    --round 1 --lr 0.001 \
     # --wandb --log --wandb_prj MTLDOG --wandb_entity heartbeats
