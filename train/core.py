@@ -157,8 +157,8 @@ class MTLDOGTR:
     def sync_grad(self):
         raise NotImplementedError()
     
-    def show_log(self, epoch: int, stage:str):
-        print(f"EPOCH: {epoch} ~~~ {stage}")
+    def show_log(self, round: int, stage:str):
+        print(f"ROUND: {round} ~~~ {stage}")
         print("{:<40} {:<40}".format('KEY', 'VALUE'))
         mean_log = {k : mean(self.log[k]) for k in self.log}
         for key, value in mean_log.items():

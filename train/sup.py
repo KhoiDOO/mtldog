@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from ds import InfiniteDataLoader, DistributedInfiniteDataLoader
+from ds import InfiniteDataLoader, DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 
 import torch
@@ -23,19 +23,17 @@ class SUP(MTLDOGTR):
 
     def train(self, gpu, args):
         args.rank += gpu
-
         dist.init_process_group(backend='nccl', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
         torch.cuda.set_device(gpu)
 
         tr_loaders = []
         te_loaders = []
-
         for idx, (trds, teds) in enumerate(zip(self.tr_dss, self.te_dss)):
-            tr_sampler = DistributedSampler(trds)
+            tr_sampler = SmartDistributedSampler(trds)
             te_sampler = DistributedSampler(teds)
             per_device_bs = args.bs // args.world_size
 
-            trl = DataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
+            trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
             tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=te_sampler)
 
             if idx in self.args.trdms:
@@ -58,11 +56,11 @@ class SUP(MTLDOGTR):
         scheduler = CosineAnnealingLR(optimizer, T_max=args.epoch)
 
         if args.rank == 0:
-            bar = alive_it(range(1, args.epoch + 1), length = 80)
+            bar = alive_it(range(args.round), length = 80)
         else:
-            bar = range(1, args.epoch + 1)
+            bar = range(args.round)
 
-        for epoch in bar:
+        for round in bar:
 
             trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
 
@@ -70,7 +68,7 @@ class SUP(MTLDOGTR):
             for trdm_batchs in zip(*tr_loaders):
                 agent.train()
                 for trld in tr_loaders:
-                    trld.sampler.set_epoch(epoch)
+                    trld.sampler.set_epoch(round)
                 
                 losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
                 
@@ -111,19 +109,18 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     self.sync()
                 else:
-                    self.show_log(epoch=epoch, stage='TRAINING')
+                    self.show_log(round=round, stage='TRAINING')
             
             # Evaluation
             agent.eval()
             if args.rank == 0:
-
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
 
                 for teld_batchs in zip(*te_loaders):
                     for teld in te_loaders:
-                        teld.sampler.set_epoch(epoch)
+                        teld.sampler.set_epoch(round)
                         losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in tedm_txts}
 
                     for tedmb, tedm_txt, train_txt, inout_txt in zip(teld_batchs, tedm_txts, train_txts, inout_txts):
