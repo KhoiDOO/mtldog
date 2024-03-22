@@ -127,10 +127,10 @@ class MTLDOGALGO(nn.Module):
     def backward(self, losses: Dict[str, Tensor]):
         raise NotImplementedError()
 
-    @property
-    def train_loss_buffer(self):
-        return self.train_loss_buffer
+    # @property
+    # def train_loss_buffer(self):
+    #     return self.train_loss_buffer
 
-    @property
-    def params(self):
-        return self.params
+    # @property
+    # def params(self):
+    #     return self.params
