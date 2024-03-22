@@ -66,13 +66,13 @@ class MTLDOGDS(Dataset):
     def domain_txt(self) -> str:
         return self.dmtxt
     
-    @property
-    def dm2idx(self) -> Dict[str, int]:
-        return self.dm2idx
+    # @property
+    # def dm2idx(self) -> Dict[str, int]:
+    #     return self.dm2idx
 
-    @property
-    def idx2dm(self) -> Dict[int, str]:
-        return self.idx2dm
+    # @property
+    # def idx2dm(self) -> Dict[int, str]:
+    #     return self.idx2dm
 
     @property
     def tasks(self) -> List[str]:
