@@ -1,4 +1,4 @@
-python main.py --ds mnisteasy --dt ./ds/source --bs 64 --wk 12 --pm \
+python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
     --trdms 0 1 \
     --tkss cls \
     --losses mse ce \
