@@ -31,10 +31,10 @@ class HPS(MTLDOGARCH):
             # self.decoder[tk] = MODEL_MAP[dec_key]
             self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key](args))
 
-    def get_share_params(self) -> Tensor[..., Tensor]:
+    def get_share_params(self) -> Tensor:
         return self.encoder.parameters()
 
-    def get_heads_params(self) -> Dict[str, Tensor[..., Tensor]]:
+    def get_heads_params(self) -> Dict[str, Tensor]:
         return {tk : self.decoder[tk].parameters() for tk in self.decoder}
 
     def zero_grad_share_params(self):
