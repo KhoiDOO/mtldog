@@ -82,7 +82,7 @@ class SUP(MTLDOGTR):
                     for tkix, tk in enumerate(args.tkss):
                         for loss_key in self.loss_dct:
                             if tk in loss_key:
-                                losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk])
+                                losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
 
                                 if args.rank == 0:
                                     trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
@@ -110,7 +110,7 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     self.sync()
                 else:
-                    self.show_log_dict(epoch=epoch, stage='TRAINING')
+                    self.show_log(epoch=epoch, stage='TRAINING')
             
             # Evaluation
             agent.eval()
@@ -123,7 +123,6 @@ class SUP(MTLDOGTR):
                 for teld_batchs in zip(*te_loaders):
                     for teld in te_loaders:
                         teld.sampler.set_epoch(epoch)
-
                         losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in tedm_txts}
 
                     for tedmb, tedm_txt, train_txt, inout_txt in zip(teld_batchs, tedm_txts, train_txts, inout_txts):
@@ -136,14 +135,12 @@ class SUP(MTLDOGTR):
 
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
-                                    losses[tedm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk])
+                                    losses[tedm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                    
                                     self.track(tedm_loss_key, losses[tedm_txt][tkix].item())
 
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
-                                    
                                     tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                         
@@ -152,7 +149,7 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     self.sync()
                 else:
-                    self.show_log_dict(epoch=epoch, stage='EVALUATION')
+                    self.show_log(epoch=epoch, stage='EVALUATION')
             
             scheduler.step()
         self.cleanup()
