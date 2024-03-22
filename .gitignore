@@ -163,5 +163,6 @@ cython_debug/
 wandb/
 runs/
 ds/source/
+ds/src/
 conversion/download
 conversion/export
