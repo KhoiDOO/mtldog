@@ -75,12 +75,10 @@ class DistributedInfiniteDataLoader(DataLoader):
 
 class SmartDistributedSampler(DistributedSampler):
     def __iter__(self):
-        """Yields indices for distributed data sampling, shuffled deterministically based on epoch and seed."""
         g = torch.Generator()
         g.manual_seed(self.seed + self.epoch)
 
-        # determine the the eventual size (n) of self.indices (DDP indices)
-        n = int((len(self.dataset) - self.rank - 1) / self.num_replicas) + 1  # num_replicas == WORLD_SIZE
+        n = int((len(self.dataset) - self.rank - 1) / self.num_replicas) + 1
         idx = torch.randperm(n, generator=g)
         if not self.shuffle:
             idx = idx.sort()[0]
