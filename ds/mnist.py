@@ -11,9 +11,9 @@ from torchvision import transforms
 from torchvision.datasets import MNIST as mnist
 from torchvision.transforms.functional import rotate
 
-DOMAIN_TXT = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
-DOMAIN_IDX = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
-TASK_TXT = ['rec', 'cls']
+DOMAIN_TXT: List[str] = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
+DOMAIN_IDX: List[int] = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
+TASK_TXT: List[str] = ['rec', 'cls']
 
 
 class MNIST(MTLDOGDS):
@@ -40,8 +40,8 @@ class MNIST(MTLDOGDS):
         if src_labl is None:
             raise ValueError("src_labl cannot be None")
         
-        self.data = src_data
-        self.labl = src_labl
+        self.data: List[Any] = src_data
+        self.labl: List[Any] = src_labl
 
         self.transform = transforms.Compose(
             [
@@ -51,7 +51,7 @@ class MNIST(MTLDOGDS):
             ]
         )
     
-    def rotate_img(self, x):
+    def rotate_img(self, x) -> Tensor:
         return rotate(x, self.dm, fill=(0,), interpolation=torchvision.transforms.InterpolationMode.BILINEAR)
     
     def __len__(self) -> int:
@@ -77,11 +77,11 @@ def get_mnist(args: Namespace) -> tuple[List[Tensor], List[Tensor], List[Tensor]
     ori_tr = mnist(args.dt, train=True, download=True)
     ori_te = mnist(args.dt, train=False, download=True)
 
-    ori_tr_imgs = ori_tr.data
-    ori_tr_lbls = ori_tr.targets
+    ori_tr_imgs: Any | Tensor = ori_tr.data
+    ori_tr_lbls: Any | Tensor = ori_tr.targets
 
-    ori_te_imgs = ori_te.data
-    ori_te_lbls = ori_te.targets
+    ori_te_imgs: Any | Tensor = ori_te.data
+    ori_te_lbls: Any | Tensor = ori_te.targets
 
     shuffle = torch.randperm(len(ori_tr_imgs))
     ori_tr_imgs = ori_tr_imgs[shuffle]
