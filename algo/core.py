@@ -10,20 +10,20 @@ class MTLDOGALGO(nn.Module):
     def __init__(self):
         super(MTLDOGALGO, self).__init__()
 
-    def init_param(self, args: Namespace):
-        self.args = args
-        self.tkss = args.tkss
-        self.train_loss_buffer = np.zeros([args.task_num, args.epochs])
+    def init_param(self, args: Namespace) -> None:
+        self.args: Namespace = args
+        self.tkss: List = args.tkss
+        self.train_loss_buffer = np.zeros([args.task_num, args.epoch])
         self.hparams_path = args.hp
         self.params = json.load(open(self.hparams_path, 'r'))
 
-    def compute_grad_dim_share(self):
+    def compute_grad_dim_share(self) -> None:
         self.grad_index_share : List[int] = []
         for param in self.get_share_params():
             self.grad_index_share.append(param.data.numel())
         self.grad_dim_share : int = sum(self.grad_index)
     
-    def compute_grad_dim_heads(self):
+    def compute_grad_dim_heads(self) -> None:
         self.grad_index_heads : Dict[str, List[int]] = {}
         head_params_dict : Dict[str, List[Tensor]] = self.get_heads_params()
         
