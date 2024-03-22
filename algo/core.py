@@ -13,7 +13,7 @@ class MTLDOGALGO(nn.Module):
     def init_param(self, args: Namespace) -> None:
         self.args: Namespace = args
         self.tkss: List = args.tkss
-        self.train_loss_buffer = np.zeros([args.task_num, args.epoch])
+        self.train_loss_buffer = np.zeros([args.task_num, args.round])
         self.hparams_path = args.hp
         self.params = json.load(open(self.hparams_path, 'r'))
 
