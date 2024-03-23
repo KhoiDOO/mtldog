@@ -1,4 +1,5 @@
-# MTLDOG - Domain Generalization for Multi-task Learning
+# <span style="color:purple">M</span><span style="color:purple">T</span><span style="color:purple">L</span><span style="color:purple">D</span><span style="color:purple">O</span><span style="color:purple">G</span> - <span style="color:purple">D</span>omain <span style="color:purple">G</span>eneralization for <span style="color:purple">M</span>ulti-<span style="color:purple">T</span>ask <span style="color:purple">L</span>earning
+
 
 ## Overview
 
@@ -55,23 +56,86 @@ In this part we list all previous projects that did help us in figuring out codi
 MTLDOG supports various datasets for multi-task learning experiments. Below are some of the datasets currently available:
 
 ### RotateMnist Dataset
+<details>
+  <summary>Detail Information</summary>
 
-The RotateMnist dataset consists of rotated MNIST images, where each image is rotated by a certain degree. It is commonly used for evaluating the performance of multi-task learning models on rotation-invariant tasks.
+The RotateMnist dataset is commonly used for evaluating multi-task learning models on digit classification and image reconstruction tasks across various domains. It consists of rotated MNIST images, where each image is rotated by a certain degree. The dataset provides a challenging setting for multi-task learning, with tasks including:
+
+#### Tasks
+
+- [x] **Digit Classification**: Predicting the digit label of each image.
+- [x] **Image Reconstruction**: Reconstructing the original image from its rotated versions.
+
+#### Domains
+
+The dataset provides three versions of increasing difficulty, each with different numbers of domains:
+
+- [x] **Easy (5 Domains)**: Contains images rotated across 5 domains.
+- [x] **Medium (6 Domains)**: Contains images rotated across 6 domains.
+- [x] **Hard (10 Domains)**: Contains images rotated across 10 domains.
+
+#### Download
+This dataset will be automatically downloaded when conducting the experiments. 
+</details>
 
 ### CityScapes Dataset
+<details>
+  <summary>Detail Information</summary>
+The CityScapes dataset is a large-scale dataset for semantic urban scene understanding. It contains high-quality pixel-level annotations for urban street scenes, making it suitable for various tasks in computer vision and scene understanding. 
 
-The CityScapes dataset is a large-scale dataset for semantic urban scene understanding. It contains high-quality pixel-level annotations for urban street scenes, making it suitable for various tasks in computer vision and scene understanding. Some of the tasks supported by CityScapes include:
+#### Tasks
 
+Some of the tasks supported by CityScapes include:
 - [x] **Semantic Segmentation**: Predicting the semantic labels of pixels in urban street scenes.
 - [x] **Depth Estimation**: Estimating the depth or distance of objects in the scene from the camera viewpoint.
 - [ ] **Instance Segmentation**: Identifying and segmenting individual objects within urban scenes.
 - [ ] **Human Detection**: Detecting and localizing human instances in urban scenes.
 - [ ] **3D Object Detection**: Predicting the 3D bounding boxes of objects present in the scene, providing information about their position and size in 3D space.
 
+#### Domains
+The dataset includes annotations for various environmental conditions:
+
+- [x] **Clear**: Scenes captured under clear weather conditions.
+- [x] **Foggy**: Scenes captured under foggy weather conditions.
+- [x] **Rainy**: Scenes captured under rainy weather conditions.
+
+#### Download
+
+</details>
 
 ## Training
-
 ### Common Parameters
+<details>
+  <summary>Detail Information</summary>
+
+| Parameter     | Description                                                                                       |
+|---------------|---------------------------------------------------------------------------------------------------|
+| --ds          | Dataset in use.                                                                                   |
+| --dt          | Root data directory.                                                                              |
+| --bs          | Batch size.                                                                                       |
+| --wk          | Number of dataset workers.                                                                        |
+| --pm          | Toggle to use pin memory.                                                                         |
+| --trdms       | List of domains used in training.                                                                 |
+| --tkss        | List of tasks used in training.                                                                   |
+| --losses      | Losses of tasks used in training.                                                                 |
+| --m           | Method used in training.                                                                          |
+| --hp          | JSON file path for hyper-parameters of method.                                                    |
+| --model       | Model type (e.g., ae, hps (hard parameter sharing)).                                             |
+| --at          | Architecture type (e.g., ae, unet).                                                               |
+| --bb          | Backbone type (e.g., ae, base, resnet18).                                                         |
+| --seed        | Seed for random number generation.                                                                |
+| --tm          | Training mode (e.g., sup (supervised)).                                                           |
+| --dvids       | List of device IDs used in training.                                                              |
+| --epoch       | Number of epochs used in training.                                                                |
+| --lr          | Learning rate.                                                                                    |
+| --port        | Multi-GPU Training Port.                                                                          |
+| --wandb       | Toggle to use wandb for online saving.                                                            |
+| --log         | Toggle to use tensorboard for offline saving.                                                     |
+| --wandb_prj   | Wandb project name.                                                                               |
+| --wandb_entity| Wandb entity name.                                                                                |
+| --gamma       | Gamma for focal loss.                                                                             |
+
+</details>
 
 ### Algorithm Hyper-parameters
 
