@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from argparse import Namespace
 from torch import nn, Tensor
 
@@ -88,6 +88,7 @@ class MTLDOGALGO(nn.Module):
                 raise ValueError(f'No support {mode} mode for gradient computation')
         
         self.zero_grad_heads_params()
+        return grads
         
     def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor:
         self.compute_grad_dim_share()
@@ -99,7 +100,7 @@ class MTLDOGALGO(nn.Module):
         grads = self.compute_grad_head(losses, mode)
         return grads
 
-    def get_grads_share_heads(self, losses: Tensor, mode: str='backward'):
+    def get_grads_share_heads(self, losses: Tensor, mode: str='backward') -> Tuple[Tensor, Dict[str, Tensor]]:
         self.compute_grad_dim_share()
         self.compute_grad_dim_heads()
 
@@ -118,7 +119,10 @@ class MTLDOGALGO(nn.Module):
                 heads_grads[tk] = torch.cat([g.view(-1) for g in head_grad])
             else:
                 raise ValueError(f'No support {mode} mode for gradient computation')
-
+        
+        self.zero_grad_share_params()
+        self.zero_grad_heads_params()
+        return share_grads, heads_grads
 
     # Extract ==================================================================================================================
 
