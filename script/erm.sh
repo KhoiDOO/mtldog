@@ -1,6 +1,6 @@
 python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
     --trdms 0 1 \
-    --tkss cls rec\
+    --tkss rec cls \
     --losses mse ce \
     --m erm --hp ./hparams/erm.json \
     --model hps --at ae --bb base \
