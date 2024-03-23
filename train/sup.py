@@ -129,7 +129,7 @@ class SUP(MTLDOGTR):
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                         output: Dict[str, Tensor] = agent(input)
 
-                        for tkix, tk in enumerate(output):
+                        for tkix, tk in enumerate(args.tkss):
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
                                     __losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
