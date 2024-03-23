@@ -6,8 +6,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
-from ds import InfiniteDataLoader, DistributedInfiniteDataLoader, SmartDistributedSampler
+from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 
 import torch
@@ -30,11 +29,10 @@ class SUP(MTLDOGTR):
         te_loaders = []
         for idx, (trds, teds) in enumerate(zip(self.tr_dss, self.te_dss)):
             tr_sampler = SmartDistributedSampler(trds)
-            te_sampler = DistributedSampler(teds)
             per_device_bs = args.bs // args.world_size
 
             trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
-            tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=te_sampler)
+            tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm)
 
             if idx in self.args.trdms:
                 tr_loaders.append(trl)
@@ -53,7 +51,7 @@ class SUP(MTLDOGTR):
         agent = Agent(args=args).cuda(gpu)
         agent = DDP(agent, device_ids=[gpu])
         optimizer = Adam(params=agent.parameters(), lr=args.lr)
-        scheduler = CosineAnnealingLR(optimizer, T_max=args.epoch)
+        scheduler = CosineAnnealingLR(optimizer, T_max=args.round)
 
         if args.rank == 0:
             bar = alive_it(range(args.round), length = 80)
@@ -64,11 +62,10 @@ class SUP(MTLDOGTR):
 
         for round in bar:
 
-            # Training
             trdm_batchs = next(zip(*tr_loaders))
             agent.train()
             for trld in tr_loaders:
-                trld.sampler.set_epoch(round)
+                trld.sampler.set_round(round)
             
             losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
             
@@ -110,38 +107,38 @@ class SUP(MTLDOGTR):
                 else:
                     self.show_log(round=round, stage='TRAINING')
             
-            # Evaluation
             agent.eval()
-            if args.rank == 0:
+            if args.rank == 0 and round % args.chkfreq == 0 and round != 0:
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
+                # losses = {}
 
-                for teld_batchs in zip(*te_loaders):
-                    for teld in te_loaders:
-                        teld.sampler.set_epoch(round)
-                        losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in tedm_txts}
+                for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
+                    # _losses = torch.zeros(len(args.tkss)).cuda(gpu)
+                    for (input, target) in teld:
 
-                    for tedmb, tedm_txt, train_txt, inout_txt in zip(teld_batchs, tedm_txts, train_txts, inout_txts):
-                        input, target = tedmb
+                        __losses = torch.zeros(len(args.tkss)).cuda(gpu)
+
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                         output: Dict[str, Tensor] = agent(input)
 
                         for tkix, tk in enumerate(output):
-
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
-                                    losses[tedm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+                                    __losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(tedm_loss_key, losses[tedm_txt][tkix].item())
+                                    self.track(tedm_loss_key, __losses[tkix].item())
 
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
                                     tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                         
-                        # grad_dict = agent.module.backward(losses=losses)
+                        # _losses += __losses
+                        
+                    # losses[tedm_txt] = _losses / len(teld)
                 
                 if args.wandb:
                     self.sync()
@@ -149,4 +146,4 @@ class SUP(MTLDOGTR):
                     self.show_log(round=round, stage='EVALUATION')
             
             scheduler.step()
-        self.cleanup()
+        self.finish()

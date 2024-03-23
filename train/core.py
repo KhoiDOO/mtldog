@@ -174,5 +174,5 @@ class MTLDOGTR:
         not NotImplementedError()
     
     @staticmethod
-    def cleanup():
+    def finish():
         dist.destroy_process_group()

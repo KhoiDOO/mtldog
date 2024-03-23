@@ -36,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--round', type=int, default=1, help='number of rounds used in training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--port', type=int, default=8080, help='Multi-GPU Training Port.')
+    parser.add_argument('--chkfreq', type=int, default=100, help='freqency checkpoint')
 
     # logging
     parser.add_argument('--wandb', action='store_true', help='toggle to use wandb for online saving')
