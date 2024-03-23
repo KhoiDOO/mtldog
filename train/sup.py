@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 
+import os, sys
 import torch
 import torch.multiprocessing as mp
 import torch.distributed as dist
@@ -22,6 +23,12 @@ class SUP(MTLDOGTR):
 
     def train(self, gpu, args):
         args.rank += gpu
+
+        f = open(os.devnull, "w")
+        if args.rank != 0:
+            sys.stdout = f
+            sys.stderr = f
+
         dist.init_process_group(backend='nccl', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
         torch.cuda.set_device(gpu)
 
@@ -112,10 +119,8 @@ class SUP(MTLDOGTR):
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
-                # losses = {}
 
                 for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
-                    # _losses = torch.zeros(len(args.tkss)).cuda(gpu)
                     for (input, target) in teld:
 
                         __losses = torch.zeros(len(args.tkss)).cuda(gpu)
@@ -135,10 +140,6 @@ class SUP(MTLDOGTR):
                                 if tk in metric_key:
                                     tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
-                        
-                        # _losses += __losses
-                        
-                    # losses[tedm_txt] = _losses / len(teld)
                 
                 if args.wandb:
                     self.sync()
