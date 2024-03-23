@@ -17,6 +17,7 @@ class MTLDOGALGO(nn.Module):
         self.hparams_path = args.hp
         self.params = json.load(open(self.hparams_path, 'r'))
 
+    # Extract ==================================================================================================================
     def compute_grad_dim_share(self) -> None:
         self.grad_index_share : List[int] = []
         for param in self.get_share_params():
@@ -87,7 +88,41 @@ class MTLDOGALGO(nn.Module):
                 raise ValueError(f'No support {mode} mode for gradient computation')
         
         self.zero_grad_heads_params()
+        
+    def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor:
+        self.compute_grad_dim_share()
+        grads = self.compute_grad_share(losses, mode)
+        return grads
     
+    def get_grads_heads(self, losses: Tensor, mode: str='backward') -> Dict[str, Tensor]:
+        self.compute_grad_dim_heads()
+        grads = self.compute_grad_head(losses, mode)
+        return grads
+
+    def get_grads_share_heads(self, losses: Tensor, mode: str='backward'):
+        self.compute_grad_dim_share()
+        self.compute_grad_dim_heads()
+
+        share_grads = torch.zeros(self.task_num, self.grad_dim_share).to(self.device)
+        heads_grads = {head : torch.zeros(self.grad_dim_heads[head]) for head in self.grad_dim_heads}
+
+        for tkidx, tk in enumerate(self.tkss):
+            if mode == 'backward':
+                losses[tkidx].backward(retain_graph=True)
+                share_grads[tkidx] = self.grad2vec_share()
+                heads_grads[tk] = self.grad2vec_heads(head=tk)
+            elif mode == 'autograd':
+                share_grad = list(torch.autograd.grad(losses[tkidx], self.get_share_params(), retain_graph=True))
+                share_grads[tkidx] = torch.cat([g.view(-1) for g in share_grad])
+                head_grad = list(torch.autograd.grad(losses[tkidx], self.get_heads_params(), retain_graph=True))
+                heads_grads[tk] = torch.cat([g.view(-1) for g in head_grad])
+            else:
+                raise ValueError(f'No support {mode} mode for gradient computation')
+
+
+    # Extract ==================================================================================================================
+
+    # Update ==================================================================================================================
     def reset_grad_share(self, new_grads: Tensor):
         count = 0
         for param in self.get_share_params():
@@ -107,30 +142,11 @@ class MTLDOGALGO(nn.Module):
                     end = sum(self.grad_index_heads[head][:(count[head]+1)])
                     param.grad.data = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
                 count[head] += 1
-        
-    def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor:
-        self.compute_grad_dim_share()
-        grads = self.compute_grad_share(losses, mode)
-        return grads
-    
-    def get_grads_heads(self, losses: Tensor, mode: str='backward') -> Dict[str, Tensor]:
-        self.compute_grad_dim_heads()
-        grads = self.compute_grad_head(losses, mode)
-        return grads
-
     
     def backward_new_grads_share(self, batch_weight, grads=None):
         new_grads = sum([batch_weight[i] * grads[i] for i in range(self.task_num)])
         self.reset_grad_share(new_grads)
-    
 
     def backward(self, losses: Dict[str, Tensor]):
         raise NotImplementedError()
-
-    # @property
-    # def train_loss_buffer(self):
-    #     return self.train_loss_buffer
-
-    # @property
-    # def params(self):
-    #     return self.params
+    # Update ==================================================================================================================
