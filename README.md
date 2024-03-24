@@ -10,7 +10,9 @@ MTLDOG stands for Multi-Task Learning with Domain Generalization. It is designed
 
 - **CLI Interaction**: Easily interact with MTLDOG via the command line interface.
 - **Flexible Configuration**: Customize various aspects of training, including datasets, tasks, losses, methods, models, and training parameters.
+- **Multi-task Learning**: Train models to perform multiple tasks simultaneously, improving efficiency and performance.
 - **Domain Generalization**: Incorporate domain generalization techniques into multi-task learning training pipelines.
+- **Multi-GPU Support**: Utilize multiple GPUs for training with the capability to select specific GPUs.
 - **Logging and Monitoring**: Utilize logging by using WandB for online and offline saving of training progress.
 
 ### Usage
@@ -45,6 +47,8 @@ In this part we list all previous projects that did help us in figuring out codi
   - [Requirements](#requirements)
   - [Reference](#reference)
 - [Dataset](#dataset)
+  - [RotateMnist Dataset](#rotatemnist-dataset)
+  - [CityScapes Dataset](#cityscapes-dataset)
 - [Training](#training)
   - [Common Parameters](#common-parameters)
   - [Algorithm Hyper-parameters](#algorithm-hyper-parameters)
@@ -121,7 +125,7 @@ The dataset includes annotations for various environmental conditions:
 | --losses      | Losses of tasks used in training.                                                                 |
 | --m           | Method used in training.                                                                          |
 | --hp          | JSON file path for hyper-parameters of method.                                                    |
-| --model       | Model type (e.g., ae, hps (hard parameter sharing)).                                             |
+| --model       | Model type (e.g., ae, hps (hard parameter sharing)).                                              |
 | --at          | Architecture type (e.g., ae, unet).                                                               |
 | --bb          | Backbone type (e.g., ae, base, resnet18).                                                         |
 | --seed        | Seed for random number generation.                                                                |
@@ -141,6 +145,19 @@ The dataset includes annotations for various environmental conditions:
 ### Algorithm Hyper-parameters
 
 ### Default Scripts
+The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. 
+```bash
+python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
+    --trdms 0 1 \
+    --tkss rec cls \
+    --losses mse ce \
+    --m erm --hp ./hparams/erm.json \
+    --model hps --at ae --bb base \
+    --seed 0 --tm sup \
+    --dvids 1 \
+    --round 2 --chkfreq 1 --lr 0.001 \
+    --wandb --log --wandb_prj MTLDOG --wandb_entity heartbeats
+```
 
 ### Hyper-parameter Sweep Search
 
