@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument('--dvids', type=str, nargs='+', default=[0], help='list of device used in training')
     parser.add_argument('--round', type=int, default=1, help='number of rounds used in training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--port', type=int, default=8080, help='Multi-GPU Training Port.')
+    parser.add_argument('--port', type=int, default=7777, help='Multi-GPU Training Port.')
     parser.add_argument('--chkfreq', type=int, default=100, help='freqency checkpoint')
 
     # logging
