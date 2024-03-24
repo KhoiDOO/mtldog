@@ -5,6 +5,6 @@ python main.py --ds mnistmed --dt ./ds/src --bs 64 --wk 12 --pm \
     --m erm --hp ./hparams/erm.json \
     --model hps --at ae --bb base \
     --seed 0 --tm sup \
-    --dvids 1 \
+    --dvids 0 \
     --round 2 --chkfreq 1 --lr 0.001 \
     # --wandb --log --wandb_prj MTLDOG --wandb_entity heartbeats

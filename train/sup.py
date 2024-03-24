@@ -1,6 +1,6 @@
 from argparse import Namespace
 from .core import MTLDOGTR
-from typing import Dict
+from typing import Dict, List, Tuple
 from torch import Tensor
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -90,9 +90,18 @@ class SUP(MTLDOGTR):
                             if args.rank == 0:
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
+            
+            if args.ramk == 0 and args.log_grad:
+                grad_dict = {}
+                for dmtxt in trdm_txts:
+                    grad_share, grad_heads = agent.module.get_grads_share_heads(losses = losses[dmtxt])
+                    grad_dict[dmtxt] = {
+                        'share' : grad_share.detach().clone().cpu(), 
+                        'heads' : {head : grad_heads[head].detach().clone().cpu() for head in grad_heads}}
+
                     
             optimizer.zero_grad()
-            agent.module.backward(losses=losses)
+            sol_grad_share, sol_grad_head = agent.module.backward(losses=losses)
             optimizer.step()
 
             if args.rank == 0:
@@ -113,6 +122,10 @@ class SUP(MTLDOGTR):
                     self.sync()
                 else:
                     self.show_log(round=round, stage='TRAINING')
+                
+                if args.log_grad:
+                    if args.wandb:
+                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
             if args.rank == 0 and round % args.chkfreq == 0 and round != 0:

@@ -156,6 +156,12 @@ class MTLDOGTR:
 
     def sync_grad(self):
         raise NotImplementedError()
+
+    def track_sync_grad_train(self, 
+                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
+                              sol_grad_share: Tensor, 
+                              sol_grad_head: Dict[str, Tensor]):
+        raise NotImplementedError()
     
     def show_log(self, round: int, stage:str):
         print(f"ROUND: {round} ~~~ {stage}")
