@@ -128,7 +128,7 @@ class SUP(MTLDOGTR):
                         self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
-            if args.rank == 0 and round % args.chkfreq == 0 and round != 0:
+            if args.rank == 0 and args.eval and round % args.chkfreq == 0 and round != 0:
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]

@@ -161,7 +161,11 @@ class MTLDOGTR:
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
                               sol_grad_share: Tensor, 
                               sol_grad_head: Dict[str, Tensor]):
-        raise NotImplementedError()
+        if grad_dict is not None or len(grad_dict) != 0:
+            share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
+            head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
+
+            
     
     def show_log(self, round: int, stage:str):
         print(f"ROUND: {round} ~~~ {stage}")
