@@ -1,6 +1,8 @@
 # <span style="color:purple">M</span><span style="color:purple">T</span><span style="color:purple">L</span><span style="color:purple">D</span><span style="color:purple">O</span><span style="color:purple">G</span> - <span style="color:purple">D</span>omain <span style="color:purple">G</span>eneralization for <span style="color:purple">M</span>ulti-<span style="color:purple">T</span>ask <span style="color:purple">L</span>earning
 
-![](./imgs/mtldog.jpg)
+<div style="text-align:center;">
+    <img src="./imgs/mtldog.jpg" alt="MTLDOG Image" width="300" height="300">
+</div>
 
 ## Overview
 
@@ -36,9 +38,6 @@ albumentations==1.4.1
 pandas==2.2.1
 torch  # Add PyTorch separately as it may have version-specific installation requirements
 ```
-
-### Reference
-In this part we list all previous projects that did help us in figuring out coding issues in MTLDOG.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -162,6 +161,13 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
 ### Hyper-parameter Sweep Search
 
 ## Logging
+
+# Reference
+In this part we list all previous projects that did help us in figuring out coding issues in MTLDOG.
+
+- [DomainBed](https://github.com/facebookresearch/DomainBed): A versatile library for domain generalization and adaptation research, developed by Facebook Research.
+- [LibMTL](https://github.com/median-research-group/LibMTL): A comprehensive library for multi-task learning research, developed by the Median Research Group.
+- [Ultralytics](https://github.com/ultralytics/ultralytics): A powerful computer vision library with state-of-the-art object detection and classification algorithms, developed by Ultralytics.
 
 # Citation
 If you find this project useful for your research, consider cite it to your research paper.
