@@ -1,4 +1,4 @@
-python main.py --ds mnistmed --dt ./ds/src --bs 64 --wk 12 --pm \
+python main.py --ds mnistmed --dt ./ds/src --bs 2 --wk 12 --pm \
     --trdms 0 1 \
     --tkss rec cls \
     --losses mse ce \
