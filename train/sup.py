@@ -29,6 +29,7 @@ class SUP(MTLDOGTR):
             sys.stdout = f
             sys.stderr = f
 
+        print("Initializing Process Group...")
         dist.init_process_group(backend='nccl', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
         torch.cuda.set_device(gpu)
 
