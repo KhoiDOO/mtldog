@@ -151,6 +151,6 @@ class MTLDOGALGO(nn.Module):
         new_grads = sum([batch_weight[i] * grads[i] for i in range(self.task_num)])
         self.reset_grad_share(new_grads)
 
-    def backward(self, losses: Dict[str, Tensor]):
+    def backward(self, losses: Dict[str, Tensor]) -> Tuple[Tensor, Dict[str, Tensor]]:
         raise NotImplementedError()
     # Update ==================================================================================================================
