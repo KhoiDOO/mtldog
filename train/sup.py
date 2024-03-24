@@ -29,9 +29,10 @@ class SUP(MTLDOGTR):
             sys.stdout = f
             sys.stderr = f
 
-        print("Initializing Process Group...")
         dist.init_process_group(backend='nccl', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
         torch.cuda.set_device(gpu)
+        if args.rank == 0:
+            print("Initialized Process Group...")
 
         tr_loaders = []
         te_loaders = []
@@ -48,7 +49,9 @@ class SUP(MTLDOGTR):
             else:
                 te_loaders.append(trl)
                 te_loaders.append(tel)
-        
+        if args.rank == 0:
+            print("Initialized Data Loaders...")
+
         class Agent(self.model, self.algo):
             def __init__(self, args):
                 super().__init__(args)
@@ -60,7 +63,12 @@ class SUP(MTLDOGTR):
         agent = DDP(agent, device_ids=[gpu])
         optimizer = Adam(params=agent.parameters(), lr=args.lr)
         scheduler = CosineAnnealingLR(optimizer, T_max=args.round)
+        if args.rank == 0:
+            print("Initialized Agent...")
 
+        if args.rank == 0:
+            print("Start Training Process...")
+        
         if args.rank == 0:
             bar = alive_it(range(args.round), length = 80)
         else:
