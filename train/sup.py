@@ -31,8 +31,6 @@ class SUP(MTLDOGTR):
 
         dist.init_process_group(backend='nccl', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
         torch.cuda.set_device(gpu)
-        if args.rank == 0:
-            print("Initialized Process Group...")
 
         tr_loaders = []
         te_loaders = []
@@ -49,8 +47,6 @@ class SUP(MTLDOGTR):
             else:
                 te_loaders.append(trl)
                 te_loaders.append(tel)
-        if args.rank == 0:
-            print("Initialized Data Loaders...")
 
         class Agent(self.model, self.algo):
             def __init__(self, args):
@@ -63,11 +59,6 @@ class SUP(MTLDOGTR):
         agent = DDP(agent, device_ids=[gpu])
         optimizer = Adam(params=agent.parameters(), lr=args.lr)
         scheduler = CosineAnnealingLR(optimizer, T_max=args.round)
-        if args.rank == 0:
-            print("Initialized Agent...")
-
-        if args.rank == 0:
-            print("Start Training Process...")
         
         if args.rank == 0:
             bar = alive_it(range(args.round), length = 80)
@@ -100,7 +91,7 @@ class SUP(MTLDOGTR):
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
             
-            if args.ramk == 0 and args.log_grad:
+            if args.rank == 0 and args.log_grad:
                 grad_dict = {}
                 for dmtxt in trdm_txts:
                     grad_share, grad_heads = agent.module.get_grads_share_heads(losses = losses[dmtxt])
