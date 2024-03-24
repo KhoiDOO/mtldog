@@ -1,3 +1,4 @@
+wheel
 alive-progress==3.1.5
 numpy==1.26.4
 opencv-python==4.9.0.80
@@ -6,4 +7,3 @@ PyYAML==6.0.1
 tensorboard==2.16.2
 wandb==0.16.4
 albumentations==1.4.1
-pandas==2.2.1
