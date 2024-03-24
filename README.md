@@ -4,6 +4,8 @@
     <img src="./imgs/mtldog.jpg" alt="MTLDOG Image" width="300" height="300">
 </div>
 
+[![Made With Love](https://img.shields.io/badge/Made%20With-Love-orange.svg)](https://github.com/median-research-group/LibMTL)[![Supported Python versions](https://img.shields.io/pypi/pyversions/LibMTL.svg?logo=python&logoColor=FFE873)](https://github.com/KhoiDOO/mtldog)
+
 ## Overview
 
 MTLDOG stands for Multi-Task Learning with Domain Generalization. It is designed to facilitate research and experimentation in the field of multi-task learning, particularly focusing on domain generalization scenarios.
@@ -107,8 +109,10 @@ The dataset includes annotations for various environmental conditions:
 
 </details>
 
-## Training
+## Experiemental Conduction
+
 ### Common Parameters
+All avaialble arguments in ```main.py``` are placed in the following table.
 <details>
   <summary>Detail Information</summary>
 
@@ -144,7 +148,7 @@ The dataset includes annotations for various environmental conditions:
 ### Algorithm Hyper-parameters
 
 ### Default Scripts
-The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. 
+The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. For the available values for each arguments please refer to .
 ```bash
 python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
     --trdms 0 1 \
@@ -162,14 +166,26 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
 
 ## Logging
 
-# Reference
+# Citation
+If you find this project useful for your research, consider cite it to your research paper.
+```
+```
+
+# Contributor
+
+```MTLDOG``` is developed and maintained by [KhoiDoo](https://github.com/KhoiDOO). The extra contributors are:
+- Nguyen Nam Khanh
+- Nguyen Minh Duong
+
+# Contact us
+
+If you have any question or suggestion, please feel free to contact us by [raising an issue](https://github.com/KhoiDOO/mtldog/issues) or sending an email to ``khoido8899@gmail.com``.
+
+# Acknowledgement & Reference
 In this part we list all previous projects that did help us in figuring out coding issues in MTLDOG.
 
 - [DomainBed](https://github.com/facebookresearch/DomainBed): A versatile library for domain generalization and adaptation research, developed by Facebook Research.
 - [LibMTL](https://github.com/median-research-group/LibMTL): A comprehensive library for multi-task learning research, developed by the Median Research Group.
 - [Ultralytics](https://github.com/ultralytics/ultralytics): A powerful computer vision library with state-of-the-art object detection and classification algorithms, developed by Ultralytics.
 
-# Citation
-If you find this project useful for your research, consider cite it to your research paper.
-```
-```
+# License
