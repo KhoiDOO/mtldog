@@ -14,7 +14,7 @@ class ERM(MTLDOGALGO):
         total_loss = torch.sum(sum(losses.values()))
         total_loss.backward()
 
-        return None
+        return None, None
 
 def algo_erm():
     return ERM
