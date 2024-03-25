@@ -170,13 +170,23 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
 # Citation
 If you find this project useful for your research, consider cite it to your research paper.
 ```
+@misc{MTLDOG,
+  title={MTLDOG - Domain Generalization for Multi-task Learning},
+  author={KhoiDoo},
+  year={2024},
+  publisher={GitHub},
+  journal={GitHub Repository},
+  howpublished={\url{https://github.com/KhoiDOO/mtldog}},
+  note={Accessed: [15 March 2024]}
+}
 ```
 
 # Contributor
 
 ```MTLDOG``` is developed and maintained by [KhoiDoo](https://github.com/KhoiDOO). The extra contributors are:
-- Nguyen Nam Khanh
-- Nguyen Minh Duong
+- [Nguyen Nam Khanh](https://github.com/khanhkhanhlele)
+- [Nguyen Minh Duong](https://github.com/skydvn)
+- [ChatGPT](https://openai.com/chatgpt), an AI language model developed by OpenAI.
 
 # Contact us
 
@@ -190,3 +200,5 @@ In this part we list all previous projects that did help us in figuring out codi
 - [Ultralytics](https://github.com/ultralytics/ultralytics): A powerful computer vision library with state-of-the-art object detection and classification algorithms, developed by Ultralytics.
 
 # License
+
+This project is licensed under the MIT LICENSE - see the [LICENSE](./LICENSE) file for details.
