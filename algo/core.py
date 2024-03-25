@@ -50,6 +50,7 @@ class MTLDOGALGO(nn.Module):
 
     def grad2vec_heads(self, head:str) -> Tensor:
         grad = torch.zeros(self.grad_dim_heads[head])
+        count = 0
         for param in self.get_heads_params()[head]:
             if param.grad is not None:
                 beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count])
