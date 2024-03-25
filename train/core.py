@@ -79,6 +79,7 @@ class MTLDOGTR:
         self.model = self.model_dct[f'model_{self.args.model}']()
 
     def prepare_wandb(self):
+        self.log = {}
         self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
         hparams_path = self.args.hp
@@ -201,7 +202,6 @@ class MTLDOGTR:
         
         main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
 
-        # vec_main_grad_dict = {key : item for key, item in main_grad_dict.items() if 'vec' in key}
         mat_main_grad_dict = {key : item for key, item in main_grad_dict.items() if 'mat' in key}
 
         for key, item in mat_main_grad_dict.items():

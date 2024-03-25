@@ -9,8 +9,7 @@ from torch.utils.data import DataLoader
 from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 
-import os, sys
-import torch
+import os, sys, torch
 import torch.multiprocessing as mp
 import torch.distributed as dist
 
