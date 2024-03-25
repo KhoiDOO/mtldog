@@ -90,7 +90,6 @@ class MTLDOGTR:
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
-            group="DDP",
             config=self.config_dict,
             name=self.args.run_name,
             force=True
@@ -132,7 +131,6 @@ class MTLDOGTR:
                               sol_grad_head: Dict[str, Tensor]) -> Dict[str, Tensor | DataFrame]:
         
         main_grad_dict = {}
-
         if grad_dict is not None or len(grad_dict) != 0:
             share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
             head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
@@ -182,8 +180,7 @@ class MTLDOGTR:
     def track_sync_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
                               sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor],
-                              round: int):
+                              sol_grad_head: Dict[str, Tensor]):
         
         main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
 
@@ -191,7 +188,7 @@ class MTLDOGTR:
             if 'vec' in key:
                 self.logrun.log({key : item})
             elif 'mat' in key:
-                self.logrun.log({key + f'--{round}' : wandb.Table(dataframe=item)})
+                self.logrun.log({key : wandb.Table(dataframe=item)})
             else:
                 print(key)
 

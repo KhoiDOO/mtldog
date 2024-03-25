@@ -22,6 +22,7 @@ class SUP(MTLDOGTR):
 
     def train(self, gpu, args):
         args.rank += gpu
+        is_master = args.rank == 0
 
         f = open(os.devnull, "w")
         if args.rank != 0:
@@ -59,15 +60,10 @@ class SUP(MTLDOGTR):
         optimizer = Adam(params=agent.parameters(), lr=args.lr)
         scheduler = CosineAnnealingLR(optimizer, T_max=args.round)
         
-        if args.rank == 0:
-            bar = alive_it(range(args.round), length = 80)
-        else:
-            bar = range(args.round)
-        
+        bar = alive_it(range(args.round), length = 80) if is_master else range(args.round)
         trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
 
         for round in bar:
-
             trdm_batchs = next(zip(*tr_loaders))
             agent.train()
             for trld in tr_loaders:
@@ -86,11 +82,11 @@ class SUP(MTLDOGTR):
                         if tk in loss_key:
                             losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
 
-                            if args.rank == 0:
+                            if is_master:
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
             
-            if args.rank == 0 and args.grad:
+            if is_master and args.grad:
                 grad_dict = {}
                 for dmtxt in trdm_txts:
                     grad_share, grad_heads = agent.module.get_grads_share_heads(losses = losses[dmtxt])
@@ -102,7 +98,7 @@ class SUP(MTLDOGTR):
             sol_grad_share, sol_grad_head = agent.module.backward(losses=losses)
             optimizer.step()
 
-            if args.rank == 0:
+            if is_master:
                 agent.eval()
                 for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
                     input, target = trdmb
@@ -123,12 +119,12 @@ class SUP(MTLDOGTR):
                 
                 if args.grad:
                     if args.wandb:
-                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
+                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
                     else:
                         self.show_table_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
-            if args.rank == 0 and args.diseval and round % args.chkfreq == 0 and round != 0:
+            if is_master and args.diseval and round % args.chkfreq == 0 and round != 0:
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
