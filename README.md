@@ -1,8 +1,8 @@
 # <span style="color:purple">M</span><span style="color:purple">T</span><span style="color:purple">L</span><span style="color:purple">D</span><span style="color:purple">O</span><span style="color:purple">G</span> - <span style="color:purple">D</span>omain <span style="color:purple">G</span>eneralization for <span style="color:purple">M</span>ulti-<span style="color:purple">T</span>ask <span style="color:purple">L</span>earning
 
 <div style="text-align:center;">
-    <img src="./imgs/mtldog.jpg" alt="MTLDOG Image" width="500" height="500">
-    <img src="./imgs/mtldog_feature.jpg" alt="MTLDOG Image" width="500" height="500">
+    <img src="./imgs/mtldog.jpg" alt="MTLDOG Image" width="400" height="400">
+    <img src="./imgs/mtldog_feature.jpg" alt="MTLDOG Image" width="400" height="400">
 </div>
 
 [![Made With Love](https://img.shields.io/badge/Made%20With-Love-orange.svg)](https://github.com/median-research-group/LibMTL)[![Supported Python versions](https://img.shields.io/pypi/pyversions/LibMTL.svg?logo=python&logoColor=FFE873)](https://github.com/KhoiDOO/mtldog)
