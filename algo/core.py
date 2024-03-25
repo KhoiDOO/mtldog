@@ -22,7 +22,7 @@ class MTLDOGALGO(nn.Module):
         self.grad_index_share : List[int] = []
         for param in self.get_share_params():
             self.grad_index_share.append(param.data.numel())
-        self.grad_dim_share : int = sum(self.grad_index)
+        self.grad_dim_share : int = sum(self.grad_index_share)
     
     def compute_grad_dim_heads(self) -> None:
         self.grad_index_heads : Dict[str, List[int]] = {}
