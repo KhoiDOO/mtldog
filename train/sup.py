@@ -91,14 +91,13 @@ class SUP(MTLDOGTR):
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
             
-            if args.rank == 0 and args.log_grad:
+            if args.rank == 0 and args.grad:
                 grad_dict = {}
                 for dmtxt in trdm_txts:
                     grad_share, grad_heads = agent.module.get_grads_share_heads(losses = losses[dmtxt])
                     grad_dict[dmtxt] = {
                         'share' : grad_share.detach().clone().cpu(), 
                         'heads' : {head : grad_heads[head].detach().clone().cpu() for head in grad_heads}}
-
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=losses)
@@ -123,12 +122,14 @@ class SUP(MTLDOGTR):
                 else:
                     self.show_log(round=round, stage='TRAINING')
                 
-                if args.log_grad:
+                if args.grad:
                     if args.wandb:
                         self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                    else:
+                        self.show_table_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
-            if args.rank == 0 and args.eval and round % args.chkfreq == 0 and round != 0:
+            if args.rank == 0 and args.diseval and round % args.chkfreq == 0 and round != 0:
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
@@ -136,7 +137,7 @@ class SUP(MTLDOGTR):
                 for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
                     for (input, target) in teld:
 
-                        __losses = torch.zeros(len(args.tkss)).cuda(gpu)
+                        losses = torch.zeros(len(args.tkss)).cuda(gpu)
 
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
@@ -145,9 +146,9 @@ class SUP(MTLDOGTR):
                         for tkix, tk in enumerate(args.tkss):
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
-                                    __losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+                                    losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(tedm_loss_key, __losses[tkix].item())
+                                    self.track(tedm_loss_key, losses[tkix].item())
 
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:

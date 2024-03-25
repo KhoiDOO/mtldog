@@ -2,9 +2,11 @@ from typing import *
 from argparse import Namespace
 from statistics import mean
 from torch import Tensor
+from .utils import get_hash, save_json, cosine_dataframe, dot_dataframe
+from pandas import DataFrame
+from tabulate import tabulate
 
-import os, sys, torch, wandb
-import json, hashlib
+import os, sys, torch, wandb, json
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
 import ds, arch, algo, loss, metric
 import torch.distributed as dist
@@ -60,7 +62,7 @@ class MTLDOGTR:
         if not os.path.exists(self.ds_dir):
             os.mkdir(self.ds_dir)
 
-        self.args.hashcode = self.get_hash()
+        self.args.hashcode = get_hash(args=self.args)
         self.args.save_dir = self.save_dir = self.ds_dir + f"/{self.args.hashcode}"
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
@@ -119,11 +121,6 @@ class MTLDOGTR:
             self.logrun.log_model(path=self.last_model_path, name=f'{self.run_name}-last-model')
         else:
             raise Exception(f'last model path is not exist at {self.last_model_path}')
-
-    def get_hash(self):
-        args_str = json.dumps(vars(self.args), sort_keys=True)
-        args_hash = hashlib.md5(args_str.encode('utf-8')).hexdigest()
-        return args_hash
     
     def track(self, key: str, value: float):
         if key in self.log:
@@ -136,36 +133,80 @@ class MTLDOGTR:
         self.logrun.log(mean_log)
         self.log = {}
     
-    def track_grad(self,
-                   share_grads: Dict[str, Tensor],
-                   heads_grads: Dict[str, Dict[str, Tensor]],
-                   sol_share_grad: Tensor,
-                   sol_head_grad: Dict[str, Tensor]):
+    def preprocess_grad_train(self, 
+                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
+                              sol_grad_share: Tensor, 
+                              sol_grad_head: Dict[str, Tensor]) -> Dict[str, Tensor | DataFrame]:
         
-        if share_grads is not None:
-            self.share_log_grad.append(share_grads)
-        
-        if heads_grads is not None:
-            self.heads_log_grad.append(heads_grads)
-        
-        if sol_share_grad is not None:
-            self.sol_share_log_grad.append(sol_share_grad)
-        
-        if sol_head_grad is not None:
-            self.sol_heads_log_grad.append(sol_head_grad)
+        main_grad_dict = {}
 
-    def sync_grad(self):
-        raise NotImplementedError()
+        if grad_dict is not None or len(grad_dict) != 0:
+            share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
+            head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
+
+            share_grad_keys = []
+            share_grad_vectors = []
+            for dmtxt in share_grad_dict:
+                for tkidx, tk in enumerate(self.args.tkss):
+                    share_grad_keys.append(f'{dmtxt}-{tk}')
+                    share_grad_vectors.append(share_grad_dict[dmtxt][tkidx])
+
+                    main_grad_dict[f'grad-share-{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
+            
+            main_grad_dict['grad-share-cos-mat'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
+            main_grad_dict['grad-share-dot-mat'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
+
+            if sol_grad_share is not None:
+                main_grad_dict[f'sol-grad-share-vec'] = sol_grad_share
+                share_grad_keys.append('sol-grad')
+                share_grad_vectors.append(sol_grad_share)
+
+                main_grad_dict['sol-grad-share-cos-mat'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
+                main_grad_dict['sol-grad-share-dot-mat'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
+
+            for _, tk in enumerate(self.args.tkss):
+                head_grad_keys = []
+                head_grad_vectors = []
+                for dmtxt in head_grad_dict:
+                    head_grad_keys.append(f'{dmtxt}-{tk}')
+                    head_grad_vectors.append(head_grad_dict[dmtxt][tk])
+                
+                    main_grad_dict[f'grad-heads-{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
+
+                main_grad_dict['grad-heads-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+                main_grad_dict['grad-heads-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+
+                if sol_grad_head is not None:
+                    main_grad_dict[f'sol-grad-head-{tk}-vec'] = sol_grad_head[tk]
+                    head_grad_keys.append(f'sol-grad-head-{tk}-vec')
+                    head_grad_vectors.append(sol_grad_head[tk])
+
+                    main_grad_dict[f'sol-grad-heads-{tk}-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+                    main_grad_dict[f'sol-grad-heads-{tk}-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+        
+        return main_grad_dict
 
     def track_sync_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
                               sol_grad_share: Tensor, 
                               sol_grad_head: Dict[str, Tensor]):
-        if grad_dict is not None or len(grad_dict) != 0:
-            share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
-            head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
+        
+        pass
 
-            
+    def show_table_grad_train(self, 
+                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
+                              sol_grad_share: Tensor, 
+                              sol_grad_head: Dict[str, Tensor],
+                              round: int, stage:str):
+        
+        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
+        # vec_main_grad_dict = {key : item for key, item in main_grad_dict.items() if 'vec' in key}
+        mat_main_grad_dict = {key : item for key, item in main_grad_dict.items() if 'mat' in key}
+
+        for key, item in mat_main_grad_dict.items():
+            print(key)
+            print(tabulate(item, headers='keys', tablefmt='psql'))
     
     def show_log(self, round: int, stage:str):
         print(f"ROUND: {round} ~~~ {stage}")
@@ -174,11 +215,6 @@ class MTLDOGTR:
         for key, value in mean_log.items():
             print("{:<40} {:<40}".format(key, value))
         self.log = {}
-
-    @staticmethod
-    def save_json(dct, path):
-        with open(path, 'w') as outfile:
-            json.dump(dct, outfile)
     
     def run(self):
         not NotImplementedError()
