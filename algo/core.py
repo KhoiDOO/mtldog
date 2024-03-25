@@ -30,7 +30,7 @@ class MTLDOGALGO(nn.Module):
         
         for head in head_params_dict:
             for param in head_params_dict[head]:
-                if head in self.grad_index_heads:
+                if head not in self.grad_index_heads:
                     self.grad_index_heads[head] = [param.data.numel()]
                 else:
                     self.grad_index_heads[head].append(param.data.numel())
