@@ -58,6 +58,10 @@ torch  # Add PyTorch separately as it may have version-specific installation req
   - [Hyper-parameter Sweep Search](#hyper-parameter-sweep-search)
 - [Logging](#logging)
 - [Citation](#citation)
+- [Contributor](#contributor)
+- [Contact us](#contact-us)
+- [Acknowledgement & Reference](#acknowledgement--reference)
+- [License](#license)
 
 ## Dataset
 MTLDOG supports various datasets for multi-task learning experiments. Below are some of the datasets currently available:
@@ -146,8 +150,6 @@ All avaialble arguments in ```main.py``` are placed in the following table.
 
 </details>
 
-### Algorithm Hyper-parameters
-
 ### Default Scripts
 The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. For the available values for each arguments please refer to .
 ```bash
@@ -162,8 +164,6 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
     --round 2 --chkfreq 1 --lr 0.001 \
     --wandb --log --wandb_prj MTLDOG --wandb_entity heartbeats
 ```
-
-### Hyper-parameter Sweep Search
 
 ## Logging
 
