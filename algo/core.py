@@ -55,7 +55,7 @@ class MTLDOGALGO(nn.Module):
             if param.grad is not None:
                 beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count])
                 end = sum(self.grad_index_heads[head][:(count+1)])
-                grad[head][beg:end] = param.grad.data.view(-1)
+                grad[beg:end] = param.grad.data.view(-1)
             count += 1
         return grad
     
