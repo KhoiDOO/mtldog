@@ -28,7 +28,7 @@ def dot_similarity(vectors: List[Tensor]) -> np.array:
     return dot_simi_mat
 
 def matrix_dataframe(keys: List[str], mat:np.array):
-    return pd.DataFrame(data=mat, columns=keys)
+    return pd.DataFrame(data=mat, columns=keys, index=keys)
 
 def cosine_dataframe(keys: List[str], vectors: List[Tensor]):
     return matrix_dataframe(keys=keys, mat=cosine_similarity(vectors=vectors))

@@ -22,7 +22,6 @@ class MTLDOGTR:
         self.prepare_algo()
         if self.args.wandb:
             self.prepare_wandb()
-        self.prepare_log()
         self.prepare_loss()
         self.prepare_metric()
 
@@ -84,24 +83,17 @@ class MTLDOGTR:
 
         hparams_path = self.args.hp
         params = json.load(open(hparams_path, 'r'))
-        config_dict = vars(self.args)
-        config_dict.update(params)
+        self.config_dict = vars(self.args)
+        self.config_dict.update(params)
 
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
             group="DDP",
-            config=config_dict,
+            config=self.config_dict,
             name=self.args.run_name,
             force=True
         )
-
-    def prepare_log(self):
-        self.log: Dict = {}
-        self.share_log_grad: List[Dict[str, Tensor]] = []
-        self.heads_log_grad: List[Dict[str, Dict[str, Tensor]]] = []
-        self.sol_share_log_grad: List[Tensor] = []
-        self.sol_heads_log_grad: List[Dict[str, Tensor]] = []
     
     def prepare_loss(self):
         loss_map = vars(loss)
@@ -189,9 +181,18 @@ class MTLDOGTR:
     def track_sync_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
                               sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor]):
+                              sol_grad_head: Dict[str, Tensor],
+                              round: int):
         
-        pass
+        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
+        for key, item in main_grad_dict.items():
+            if 'vec' in key:
+                self.logrun.log({key : item})
+            elif 'mat' in key:
+                self.logrun.log({key + f'--{round}' : wandb.Table(dataframe=item)})
+            else:
+                print(key)
 
     def show_table_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 

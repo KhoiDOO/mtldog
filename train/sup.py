@@ -124,7 +124,7 @@ class SUP(MTLDOGTR):
                 
                 if args.grad:
                     if args.wandb:
-                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
                     else:
                         self.show_table_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
