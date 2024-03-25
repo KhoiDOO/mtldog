@@ -1,4 +1,4 @@
-python main.py --ds mnisteasy --dt ./ds/src --bs 1 --wk 1 \
+python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 8 \
     --trdms 0 1 \
     --tkss rec cls \
     --losses mse ce \
@@ -6,5 +6,5 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 1 --wk 1 \
     --model hps --at ae --bb debug \
     --seed 0 --tm sup \
     --dvids 0 \
-    --round 2 --chkfreq 1 --eval --lr 0.001 \
-    # --wandb --wandb_prj MTLDOG --wandb_entity heartbeats
+    --round 2 --chkfreq 1 --lr 0.001 \
+    --wandb --wandb_prj MTLDOG --wandb_entity heartbeats

@@ -20,6 +20,7 @@ class MTLDOGTR:
         self.prepare_ds()
         self.prepare_save_dir()
         self.prepare_algo()
+        self.log = {}
         if self.args.wandb:
             self.prepare_wandb()
         self.prepare_loss()
@@ -79,7 +80,6 @@ class MTLDOGTR:
         self.model = self.model_dct[f'model_{self.args.model}']()
 
     def prepare_wandb(self):
-        self.log = {}
         self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
         hparams_path = self.args.hp
@@ -102,6 +102,15 @@ class MTLDOGTR:
     def prepare_metric(self):
         metric_map = vars(metric)
         self.metric_dct = {k : metric_map[k] for k in metric_map if 'metric' in k and k.split('_')[-2] in self.args.tkss}
+    
+    def prepare_grad_logging(self):
+        if self.args.grad:
+            if len(self.args.tkss) == 1 and len(self.args.trdms) == 1:
+                self.args.grad = False
+                print("Force <args.grad> to be False as len(args.tkss) = 1 and len(rgs.trdms) = 1")
+    
+    def save_model(self):
+        pass
     
     def log_wbmodel(self):
         if os.path.exists(self.best_model_path):

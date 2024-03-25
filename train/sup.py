@@ -8,6 +8,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
+from statistics import mean
 
 import os, sys, torch
 import torch.multiprocessing as mp
@@ -62,14 +63,18 @@ class SUP(MTLDOGTR):
         
         bar = alive_it(range(args.round), length = 80) if is_master else range(args.round)
         trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
+        old_eval_loss = 1e26
+        remap = False
 
         for round in bar:
+            checkpoint = round % args.chkfreq == 0 and round != 0
+            
             trdm_batchs = next(zip(*tr_loaders))
             agent.train()
             for trld in tr_loaders:
                 trld.sampler.set_round(round)
             
-            losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
+            train_losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
             
             for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
                 input, target = trdmb
@@ -80,22 +85,22 @@ class SUP(MTLDOGTR):
                 for tkix, tk in enumerate(args.tkss):
                     for loss_key in self.loss_dct:
                         if tk in loss_key:
-                            losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+                            train_losses[trdm_txt][tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
 
                             if is_master:
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
-                                self.track(trdm_loss_key, losses[trdm_txt][tkix].item())
+                                self.track(trdm_loss_key, train_losses[trdm_txt][tkix].item())
             
             if is_master and args.grad:
                 grad_dict = {}
                 for dmtxt in trdm_txts:
-                    grad_share, grad_heads = agent.module.get_grads_share_heads(losses = losses[dmtxt])
+                    grad_share, grad_heads = agent.module.get_grads_share_heads(losses = train_losses[dmtxt])
                     grad_dict[dmtxt] = {
                         'share' : grad_share.detach().clone().cpu(), 
                         'heads' : {head : grad_heads[head].detach().clone().cpu() for head in grad_heads}}
                     
             optimizer.zero_grad()
-            sol_grad_share, sol_grad_head = agent.module.backward(losses=losses)
+            sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
             optimizer.step()
 
             if is_master:
@@ -124,15 +129,17 @@ class SUP(MTLDOGTR):
                         self.show_table_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
-            if is_master and args.diseval and round % args.chkfreq == 0 and round != 0:
+            if is_master and not args.diseval and checkpoint:
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
 
+                eval_loss_lst = []
+
                 for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
                     for (input, target) in teld:
 
-                        losses = torch.zeros(len(args.tkss)).cuda(gpu)
+                        eval_losses = torch.zeros(len(args.tkss)).cuda(gpu)
 
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
@@ -141,19 +148,48 @@ class SUP(MTLDOGTR):
                         for tkix, tk in enumerate(args.tkss):
                             for loss_key in self.loss_dct:
                                 if tk in loss_key:
-                                    losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+                                    eval_losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
                                     tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(tedm_loss_key, losses[tkix].item())
+                                    self.track(tedm_loss_key, eval_losses[tkix].item())
 
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
                                     tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
+                        
+                        eval_loss_lst.append(torch.sum(eval_losses).item())
                 
                 if args.wandb:
                     self.sync()
                 else:
                     self.show_log(round=round, stage='EVALUATION')
             
+            if is_master and checkpoint:
+                save_dict = {
+                    'args' : args,
+                    'model_state_dict': agent.module.state_dict()
+                }
+                
+                if not args.diseval:
+                    mean_loss = mean(eval_loss_lst)
+                else:
+                    mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
+            
+                if mean_loss < old_eval_loss:
+                    torch.save(save_dict, self.best_model_path)
+                    remap = True
+                else:
+                    remap = False
+                torch.save(save_dict, self.last_model_path)
+            
+            dist.barrier()
+            if checkpoint:
+                map_location = {'cuda:%d' % 0: 'cuda:%d' % args.rank}
+                if remap:
+                    agent.module.load_state_dict(torch.load(self.best_model_path, map_location=map_location)['model_state_dict'])
+
             scheduler.step()
+        
+        self.log_wbmodel()
+        
         self.finish()
