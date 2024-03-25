@@ -196,8 +196,7 @@ class MTLDOGTR:
     def show_table_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
                               sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor],
-                              round: int, stage:str):
+                              sol_grad_head: Dict[str, Tensor]):
         
         main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
 

@@ -1,7 +1,7 @@
 from argparse import Namespace
 from typing import List
 from torch import Tensor
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity as cossim
 
 import pandas as pd
 import numpy as np
@@ -19,7 +19,7 @@ def get_hash(args: Namespace) -> str:
 
 def cosine_similarity(vectors: List[Tensor]) -> np.array:
     vectors:np.array = torch.stack(vectors).numpy()
-    cos_simi_mat = cosine_similarity(vectors, vectors)
+    cos_simi_mat = cossim(vectors, vectors)
     return cos_simi_mat
 
 def dot_similarity(vectors: List[Tensor]) -> np.array:
