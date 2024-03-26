@@ -23,8 +23,9 @@ def save_pickle(dct: Dict, path:str) -> None:
 
 def read_pickle(path:str) -> Dict:
     with open(path, 'rb') as  file:
-        pickle.load(file=file)
+        dct = pickle.load(file=file)
     file.close()
+    return dct
 
 def get_hash(args: Namespace) -> str:
     args_str = json.dumps(vars(args), sort_keys=True)

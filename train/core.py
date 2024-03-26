@@ -172,7 +172,7 @@ class MTLDOGTR:
             if 'mat' in key:
                 mean_log[key] = wandb.Table(dataframe=mean_log[key])
 
-        save_pickle(dct=mean_log, path=self.save_dir + f'log_round_{self.round}.pickle')
+        save_pickle(dct=mean_log, path=self.save_dir + f'/log_round_{self.round}.pickle')
         self.round += 1
     
     def logging(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
