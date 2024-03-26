@@ -1,8 +1,8 @@
 python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 8 \
-    --trdms 0 1 --tkss rec cls --losses mse ce \
-    --m erm --hp ./hparams/erm.json \
+    --trdms 0 1 --tkss cls --losses mse ce \
+    --m avg_grad --hp ./hparams/erm.json \
     --model hps --at ae --bb debug \
     --lr 0.001 --seed 0 \
     --tm sup --dvids 0 --port 7777 \
-    --round 5000 --chkfreq 100 \
+    --round 1000 --chkfreq 100 \
     --wandb --wandb_prj MTLDOG --wandb_entity heartbeats
