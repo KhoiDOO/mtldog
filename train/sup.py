@@ -169,7 +169,7 @@ class SUP(MTLDOGTR):
             if is_master:
                 if args.wandb:
                     self.sync(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-                else:
+                elif args.verbose:
                     self.logging(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
             
             dist.barrier()
@@ -178,7 +178,6 @@ class SUP(MTLDOGTR):
                 if remap:
                     agent.module.load_state_dict(torch.load(self.best_model_path, map_location=map_location)['model_state_dict'])
 
-            
             scheduler.step()
         
         if is_master and args.wandb:

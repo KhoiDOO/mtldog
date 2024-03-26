@@ -44,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_entity', type=str, required=False, help='wandb entity name')
     parser.add_argument('--grad', action='store_true', help='toggle to save gradients')
     parser.add_argument('--diseval', action='store_true', help='toggle to disable evaluation on in/out test domain')
+    parser.add_argument('--verbose', action='store_true', help='toggle to enable logging')
 
     # focal loss
     parser.add_argument('--gamma', type=float, default=1, help='gamma for focal loss')
