@@ -129,7 +129,7 @@ class MTLDOGTR:
         else:
             self.log[key] = [value]
         
-    def sync(self):
+    def sync(self, round:int):
         mean_log = {k : mean(self.log[k]) for k in self.log}
         self.logrun.log(mean_log)
         self.log = {}

@@ -7,4 +7,5 @@ python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 8 \
     --seed 0 --tm sup \
     --dvids 0 \
     --round 2 --chkfreq 1 --lr 0.001 \
+    --grad \
     --wandb --wandb_prj MTLDOG --wandb_entity heartbeats

@@ -118,7 +118,7 @@ class SUP(MTLDOGTR):
                                 self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
                 
                 if args.wandb:
-                    self.sync()
+                    self.sync(round=round)
                 else:
                     self.show_log(round=round, stage='TRAINING')
                 
@@ -160,7 +160,7 @@ class SUP(MTLDOGTR):
                         eval_loss_lst.append(torch.sum(eval_losses).item())
                 
                 if args.wandb:
-                    self.sync()
+                    self.sync(round=round)
                 else:
                     self.show_log(round=round, stage='EVALUATION')
             
@@ -189,7 +189,7 @@ class SUP(MTLDOGTR):
                     agent.module.load_state_dict(torch.load(self.best_model_path, map_location=map_location)['model_state_dict'])
 
             scheduler.step()
-        
-        self.log_wbmodel()
+        if is_master and args.wandb:
+            self.log_wbmodel()
         
         self.finish()
