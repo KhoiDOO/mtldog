@@ -131,10 +131,9 @@ class MTLDOGALGO(nn.Module):
     def reset_grad_share(self, new_grads: Tensor):
         count = 0
         for param in self.get_share_params():
-            if param.grad is not None:
-                beg = 0 if count == 0 else sum(self.grad_index_share[:count])
-                end = sum(self.grad_index_share[:(count+1)])
-                param.grad = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
+            beg = 0 if count == 0 else sum(self.grad_index_share[:count])
+            end = sum(self.grad_index_share[:(count+1)])
+            param.grad = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
             count += 1
     
     def reset_grad_heads(self, new_grads : Dict[str, Tensor]):
@@ -142,10 +141,9 @@ class MTLDOGALGO(nn.Module):
 
         for head, params in self.get_heads_params().items():
             for param in params:
-                if param.grad is not None:
-                    beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count[head]])
-                    end = sum(self.grad_index_heads[head][:(count[head]+1)])
-                    param.grad = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
+                beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count[head]])
+                end = sum(self.grad_index_heads[head][:(count[head]+1)])
+                param.grad = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
                 count[head] += 1
     
     def backward_new_grads_share(self, batch_weight, grads=None):
