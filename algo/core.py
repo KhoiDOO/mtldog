@@ -88,7 +88,7 @@ class MTLDOGALGO(nn.Module):
             else:
                 raise ValueError(f'No support {mode} mode for gradient computation')
         
-        self.zero_grad_heads_params()
+            self.zero_grad_heads_params()
         return grads
         
     def get_grads_share(self, losses: Tensor, mode: str='backward') -> Tensor:
@@ -121,8 +121,8 @@ class MTLDOGALGO(nn.Module):
             else:
                 raise ValueError(f'No support {mode} mode for gradient computation')
         
-        self.zero_grad_share_params()
-        self.zero_grad_heads_params()
+            self.zero_grad_share_params()
+            self.zero_grad_heads_params()
         return share_grads, heads_grads
 
     # Extract ==================================================================================================================
@@ -134,7 +134,7 @@ class MTLDOGALGO(nn.Module):
             if param.grad is not None:
                 beg = 0 if count == 0 else sum(self.grad_index_share[:count])
                 end = sum(self.grad_index_share[:(count+1)])
-                param.grad.data = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
+                param.grad = new_grads[beg:end].contiguous().view(param.data.size()).data.clone()
             count += 1
     
     def reset_grad_heads(self, new_grads : Dict[str, Tensor]):
@@ -145,7 +145,7 @@ class MTLDOGALGO(nn.Module):
                 if param.grad is not None:
                     beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count[head]])
                     end = sum(self.grad_index_heads[head][:(count[head]+1)])
-                    param.grad.data = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
+                    param.grad = new_grads[head][beg:end].contiguous().view(param.data.size()).data.clone()
                 count[head] += 1
     
     def backward_new_grads_share(self, batch_weight, grads=None):
