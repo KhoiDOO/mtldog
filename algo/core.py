@@ -140,7 +140,7 @@ class MTLDOGALGO(nn.Module):
     def reset_grad_heads(self, new_grads : Dict[str, Tensor]):
         count = {tk : 0 for tk in self.tkss}
 
-        for head, params in self.get_heads_params():
+        for head, params in self.get_heads_params().items():
             for param in params:
                 if param.grad is not None:
                     beg = 0 if count == 0 else sum(self.grad_index_heads[head][:count[head]])
