@@ -51,7 +51,7 @@ class SUP(MTLDOGTR):
 
         class Agent(self.model, self.algo):
             def __init__(self, args):
-                super().__init__(args)
+                super(Agent, self).__init__(args)
 
                 self.device = gpu
                 self.init_param(args)
