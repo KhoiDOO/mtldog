@@ -116,17 +116,6 @@ class SUP(MTLDOGTR):
                             if tk in metric_key:
                                 trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
                                 self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
-                
-                if args.wandb:
-                    self.sync(round=round)
-                else:
-                    self.show_log(round=round, stage='TRAINING')
-                
-                if args.grad:
-                    if args.wandb:
-                        self.track_sync_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-                    else:
-                        self.show_table_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             agent.eval()
             if is_master and not args.diseval and checkpoint:
@@ -158,11 +147,6 @@ class SUP(MTLDOGTR):
                                     self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
                         
                         eval_loss_lst.append(torch.sum(eval_losses).item())
-                
-                if args.wandb:
-                    self.sync(round=round)
-                else:
-                    self.show_log(round=round, stage='EVALUATION')
             
             if is_master and checkpoint:
                 save_dict = {
@@ -182,13 +166,21 @@ class SUP(MTLDOGTR):
                     remap = False
                 torch.save(save_dict, self.last_model_path)
             
+            if is_master:
+                if args.wandb:
+                    self.sync(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                else:
+                    self.logging(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
+            
             dist.barrier()
             if checkpoint:
                 map_location = {'cuda:%d' % 0: 'cuda:%d' % args.rank}
                 if remap:
                     agent.module.load_state_dict(torch.load(self.best_model_path, map_location=map_location)['model_state_dict'])
 
+            
             scheduler.step()
+        
         if is_master and args.wandb:
             self.log_wbmodel()
         

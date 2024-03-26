@@ -128,11 +128,48 @@ class MTLDOGTR:
             self.log[key].append(value)
         else:
             self.log[key] = [value]
+    
+    def log_extract(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
         
-    def sync(self, round:int):
         mean_log = {k : mean(self.log[k]) for k in self.log}
-        self.logrun.log(mean_log)
+        
+        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+        
+        mean_log.update(main_grad_dict)
+        
         self.log = {}
+        return mean_log
+
+    
+    def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
+
+        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
+        for key in mean_log:
+            if 'mat' in key:
+                mean_log[key] = wandb.Table(dataframe=mean_log[key])
+
+        self.logrun.log(mean_log)
+    
+    def logging(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor], round:int):
+        
+        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
+        print(f"ROUND: {round}")
+        print("{:<70} {:<70}".format('KEY', 'VALUE'))
+        print("*"*140)
+        for key, value in mean_log.items():
+            if not isinstance(value, Tensor) and not (isinstance(value, DataFrame)):
+                print("{:<70} {:<70}".format(key, value))
+                print("-"*140)
+        
+        for key, value in mean_log.items():
+            if isinstance(value, DataFrame):
+                print(key)
+                print(tabulate(value, headers='keys', tablefmt='psql'))
     
     def preprocess_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
