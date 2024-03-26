@@ -1,6 +1,6 @@
 from argparse import Namespace
 from .core import MTLDOGTR
-from typing import Dict, List, Tuple
+from typing import Dict
 from torch import Tensor
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -122,7 +122,6 @@ class SUP(MTLDOGTR):
                 tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
                 train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
                 inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
-
                 eval_loss_lst = []
 
                 for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
@@ -167,10 +166,10 @@ class SUP(MTLDOGTR):
                 torch.save(save_dict, self.last_model_path)
             
             if is_master:
-                if args.wandb:
+                if args.wandb and checkpoint:
                     self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
                 elif args.verbose:
-                    self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
+                    self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
             dist.barrier()
             if checkpoint:

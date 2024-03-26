@@ -2,11 +2,13 @@ from typing import *
 from argparse import Namespace
 from statistics import mean
 from torch import Tensor
-from .utils import get_hash, save_json, cosine_dataframe, dot_dataframe
+from .utils import *
 from pandas import DataFrame
 from tabulate import tabulate
+from glob import glob
+from alive_progress import alive_it
 
-import os, sys, torch, wandb, json
+import os, sys, torch, wandb
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
 import ds, arch, algo, loss, metric
 import torch.distributed as dist
@@ -21,6 +23,7 @@ class MTLDOGTR:
         self.prepare_save_dir()
         self.prepare_algo()
         self.log = {}
+        self.round = 0
         if self.args.wandb:
             self.prepare_wandb()
         self.prepare_loss()
@@ -83,7 +86,7 @@ class MTLDOGTR:
         self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
         hparams_path = self.args.hp
-        params = json.load(open(hparams_path, 'r'))
+        params = read_json(path=hparams_path)
         self.config_dict = vars(self.args)
         self.config_dict.update(params)
 
@@ -108,9 +111,6 @@ class MTLDOGTR:
             if len(self.args.tkss) == 1 and len(self.args.trdms) == 1:
                 self.args.grad = False
                 print("Force <args.grad> to be False as len(args.tkss) = 1 and len(rgs.trdms) = 1")
-    
-    def save_model(self):
-        pass
     
     def log_wbmodel(self):
         if os.path.exists(self.best_model_path):
@@ -140,25 +140,47 @@ class MTLDOGTR:
         
         self.log = {}
         return mean_log
-
     
-    def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
+    def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
+                sol_grad_share: Tensor | None = None, 
+                sol_grad_head: Dict[str, Tensor] | None = None, 
+                mode='realtime'):
 
+        if mode == 'realtime':
+            mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
+            for key in mean_log:
+                if 'mat' in key:
+                    mean_log[key] = wandb.Table(dataframe=mean_log[key])
+
+            self.logrun.log(mean_log)
+        elif mode == 'last':
+            print("Syncing")
+            log_files = glob(self.save_dir + "/*.pickle")
+
+            for log_file in alive_it(log_files):
+                log_dict = read_pickle(log_file)
+                self.logrun.log(log_dict)
+        else:
+            raise ValueError(f"mode must be one of ['realtime', 'last'], but found {mode} instead")
+    
+    def buffer(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
 
         for key in mean_log:
             if 'mat' in key:
                 mean_log[key] = wandb.Table(dataframe=mean_log[key])
 
-        self.logrun.log(mean_log)
+        save_pickle(dct=mean_log, path=self.save_dir + f'log_round_{self.round}.pickle')
+        self.round += 1
     
     def logging(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor], round:int):
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]) -> None:
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
 
-        print(f"ROUND: {round}")
+        print(f"ROUND: {self.round}")
         print("{:<70} {:<70}".format('KEY', 'VALUE'))
         print("*"*140)
         for key, value in mean_log.items():
@@ -170,6 +192,8 @@ class MTLDOGTR:
             if isinstance(value, DataFrame):
                 print(key)
                 print(tabulate(value, headers='keys', tablefmt='psql'))
+        
+        self.round += 1
     
     def preprocess_grad_train(self, 
                               grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 

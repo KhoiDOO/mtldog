@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import List
+from typing import List, Dict
 from torch import Tensor
 from sklearn.metrics.pairwise import cosine_similarity as cossim
 
@@ -7,10 +7,24 @@ import pandas as pd
 import numpy as np
 import json, hashlib
 import torch
+import pickle
 
-def save_json(dct, path):
+def save_json(dct: Dict, path: str) -> None:
     with open(path, 'w') as outfile:
         json.dump(dct, outfile)
+
+def read_json(path: str) -> Dict:
+    return json.load(open(path, 'r'))
+
+def save_pickle(dct: Dict, path:str) -> None:
+    with open(path, 'wb') as  file:
+        pickle.dump(obj=dct, file=file)
+    file.close()
+
+def read_pickle(path:str) -> Dict:
+    with open(path, 'rb') as  file:
+        pickle.load(file=file)
+    file.close()
 
 def get_hash(args: Namespace) -> str:
     args_str = json.dumps(vars(args), sort_keys=True)
