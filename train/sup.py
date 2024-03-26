@@ -166,8 +166,13 @@ class SUP(MTLDOGTR):
                 torch.save(save_dict, self.last_model_path)
             
             if is_master:
-                if args.wandb and checkpoint:
-                    self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                if args.wandb:
+                    if not args.synclast:
+                        if checkpoint:
+                            self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                    else:
+                        self.buffer(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+
                 elif args.verbose:
                     self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
             
@@ -181,5 +186,8 @@ class SUP(MTLDOGTR):
         
         if is_master and args.wandb:
             self.log_wbmodel()
+
+            if args.synclast:
+                self.sync(mode='last')
         
         self.finish()

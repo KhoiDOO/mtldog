@@ -28,14 +28,13 @@ class HPS(MTLDOGARCH):
             if dec_key not in MODEL_MAP:
                 raise ValueError(f"decoder architecture key {dec_key} is not available in {[x for x in MODEL_MAP.keys() if 'decoder' in x]}")
 
-            # self.decoder[tk] = MODEL_MAP[dec_key]
             self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key](args))
 
     def get_share_params(self) -> Tensor:
         return self.encoder.parameters()
 
     def get_heads_params(self) -> Dict[str, Tensor]:
-        return {tk : self.decoder[tk].parameters() for tk in self.decoder}
+        return {tk : self.decoder[tk].parameters() for tk in self.args.tkss}
 
     def zero_grad_share_params(self):
         self.encoder.zero_grad()
@@ -45,7 +44,7 @@ class HPS(MTLDOGARCH):
     
     def forward(self, x: Tensor) -> Tensor:
         enclat = self.encoder(x)
-        return {tk : self.decoder[tk](enclat) for tk in self.decoder}
+        return {tk : self.decoder[tk](enclat) for tk in self.args.tkss}
 
 def model_hps():
     return HPS

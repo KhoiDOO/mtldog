@@ -40,10 +40,14 @@ class MTLDOGDS(Dataset):
             raise ValueError(f"the input data directory {self.dt} is not existed")
 
     def check_dm(self):
+        if self.dm is None:
+            raise ValueError('domain cannot be None')
         if self.dm not in self.idx2dm:
             raise ValueError(f"domain {self.dm} is not available in {self.def_dms}")
     
     def check_tk(self):
+        if self.tks is None:
+            raise ValueError(f"tasks cannot be None")
         if len(self.tks) > len(self.def_tks):
             raise ValueError(f"the number of input tasks ({len(self.tks)}) is more than available tasks ({len(self.def_tks)}), \
                              the available tasks are: {self.def_tks}")

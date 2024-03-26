@@ -35,7 +35,7 @@ class MTLDOGALGO(nn.Module):
                 else:
                     self.grad_index_heads[head].append(param.data.numel())
         
-        self.grad_dim_heads : Dict[str, List[int]] = {head : sum(self.grad_index_heads[head]) for head in self.grad_index_heads}
+        self.grad_dim_heads : Dict[str, List[int]] = {head : sum(self.grad_index_heads[head]) for head in self.args.tkss}
 
     def grad2vec_share(self) -> Tensor:
         grad = torch.zeros(self.grad_dim_share)
@@ -106,7 +106,7 @@ class MTLDOGALGO(nn.Module):
         self.compute_grad_dim_heads()
 
         share_grads = torch.zeros(self.task_num, self.grad_dim_share).to(self.device)
-        heads_grads = {head : torch.zeros(self.grad_dim_heads[head]) for head in self.grad_dim_heads}
+        heads_grads = {head : torch.zeros(self.grad_dim_heads[head]) for head in self.args.tkss}
 
         for tkidx, tk in enumerate(self.tkss):
             if mode == 'backward':
