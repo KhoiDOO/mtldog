@@ -177,7 +177,7 @@ class MTLDOGTR:
                               sol_grad_head: Dict[str, Tensor]) -> Dict[str, Tensor | DataFrame]:
         
         main_grad_dict = {}
-        if grad_dict is not None or len(grad_dict) != 0:
+        if grad_dict is not None:
             share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
             head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
 

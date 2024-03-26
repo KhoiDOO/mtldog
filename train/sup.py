@@ -168,9 +168,9 @@ class SUP(MTLDOGTR):
             
             if is_master:
                 if args.wandb:
-                    self.sync(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                    self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
                 elif args.verbose:
-                    self.logging(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
+                    self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, round=round)
             
             dist.barrier()
             if checkpoint:
