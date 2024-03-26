@@ -153,5 +153,14 @@ class MTLDOGALGO(nn.Module):
         self.reset_grad_share(new_grads)
 
     def backward(self, losses: Dict[str, Tensor]) -> Tuple[Tensor, Dict[str, Tensor]]:
+        
+        """
+        losses = {
+            "domain_0" : Tensor[<task_loss_0>, <task_loss_1>, ..., <task_loss_m>],
+            ...,
+            "domain_n" : Tensor[<task_loss_0>, <task_loss_1>, ..., <task_loss_m>],
+        }
+        """
+
         raise NotImplementedError()
     # Update ==================================================================================================================
