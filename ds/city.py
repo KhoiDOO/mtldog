@@ -172,7 +172,7 @@ def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     tr_dss = []
     te_dss = []
 
-    for i, dmidx in enumerate(DOMAIN_IDX):
+    for _, dmidx in enumerate(DOMAIN_IDX):
         tr_dss.append(
             CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=True)
         )
@@ -185,19 +185,38 @@ def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     
     return args, tr_dss, te_dss
 
+def check_args(args: Namespace, expect_domain:int):
+
+    def UW(args: Namespace, expect_domain:int):
+        raise UserWarning(f"You are choosing a dataset with specific domain: {args.ds}, but the train domains are {args.trdms}, \
+                          thus automatically adjusting the args.trdms to [{expect_domain}]")
+    
+    if len(args.trdms) > 1 or args.trdms[0] != expect_domain:
+        UW(args.trdms)
+    
+        args.trdms = [expect_domain]
+
+    return args
+
 def ds_city_normal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+
+    args = check_args(args, 0)
     
     args.seg_num_class = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False)]
 
 def ds_city_foggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+
+    args = check_args(args, 1)
     
     args.seg_num_class = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False)]
 
 def ds_city_rainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+
+    args = check_args(args, 2)
     
     args.seg_num_class = 20
 
