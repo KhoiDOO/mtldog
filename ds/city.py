@@ -122,9 +122,26 @@ class CityScapes(MTLDOGDS):
     
     def __getitem__(self, index: int) -> tuple[Tensor, Dict[str, Tensor]]:
         
-        img = self.transform(Image.open(self.img_paths[index]).convert("RGB"))
+        img_path = self.img_paths[index]
+        img = self.transform(Image.open(img_path).convert("RGB"))
 
+        img_name = "_".join(img_path.split("/")[-1].split("_")[:3])
+
+        tsk_dct = {}
+
+        for tk in self.tks:
+            if tk == 'seg':
+                seg_path = self.seg_dir + f"/{img_name}_gtFine_labelIds.png"
+                tsk_dct[tk] = self.seg_transform['seg'](Image.open(seg_path))
+            elif tk == 'depth':
+                if self.dm != 'rainy':
+                    depth_path = self.dep_dir + f"/{img_name}_disparity.png"
+                else:
+                    depth_path = self.dep_dir + f"/{img_name}_depth_rain.png"
+                
+                tsk_dct[tk] = self.process_depth(depth_path)
         
+        return img, tsk_dct
 
     @staticmethod
     def map_subset(train: bool):
@@ -152,11 +169,39 @@ class CityScapes(MTLDOGDS):
         return torch_depth
 
 def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
-    pass
+    tr_dss = []
+    te_dss = []
 
+    for i, dmidx in enumerate(DOMAIN_IDX):
+        tr_dss.append(
+            CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=True)
+        )
 
+        te_dss.append(
+            CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=False)
+        )
+    
+    args.seg_num_class = 20
+    
+    return args, tr_dss, te_dss
 
+def ds_city_normal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+    
+    args.seg_num_class = 20
 
+    return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False)]
+
+def ds_city_foggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+    
+    args.seg_num_class = 20
+
+    return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False)]
+
+def ds_city_rainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+    
+    args.seg_num_class = 20
+
+    return args, [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=False)]
 
 
 """CHECK
