@@ -23,7 +23,7 @@ class CITY_HPS_SEG_SEGNET_BASE_DECODER(nn.Module):
 
 class CITY_HPS_DEPTH_SEGNET_BASE_DECODER(nn.Module):
     def __init__(self,  init_ch: int) -> nn.Module:
-        super(CITY_HPS_SEG_SEGNET_BASE_DECODER, self).__init__()
+        super(CITY_HPS_DEPTH_SEGNET_BASE_DECODER, self).__init__()
 
         self.subnet = SegNetDecoder(init_ch=init_ch, seg_num_classes=1)
     
