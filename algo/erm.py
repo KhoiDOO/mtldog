@@ -11,7 +11,7 @@ class ERM(MTLDOGALGO):
         super().__init__()
 
     def backward(self, losses: Dict[str, Tensor]):
-        total_loss = torch.sum(sum(losses.values()))
+        total_loss = torch.mean(torch.cat(list(losses.values())))
         total_loss.backward()
 
         return None, None
