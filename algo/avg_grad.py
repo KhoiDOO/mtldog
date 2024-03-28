@@ -14,7 +14,6 @@ class AVG_GRAD(MTLDOGALGO):
         
         share_grads = torch.stack([self.get_grads_share(loss, mode='backward') for loss in losses.values()])
         mean_share_grads = torch.mean(share_grads, dim=[0,1])
-        # mean_share_grads = share_grads[0][0]
         
         head_grad = []
         for loss in losses.values():
