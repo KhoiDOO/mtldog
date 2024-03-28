@@ -22,8 +22,22 @@ MTLDOG stands for Multi-Task Learning with Domain Generalization. It is designed
 
 ### Usage
 
-To use MTLDOG, simply run the `main.py` script with appropriate command-line arguments. Here's an example of how to run MTLDOG:
-
+First create a virtual environemnt and install all requirements in ```requirements.txt``` as well as Pytorch version that is suitable for your os and system. Note that the repository is created to be used in Linux-based system, which is not guarantee to work well on other os (i.e. Window, Mac).
+```
+python3 -m venv .env
+source .env/bin/activate
+python -m pip install -U pip
+pip install -r requirements.txt
+```
+Before using, check wether ```GPU``` and ```CUDA``` are available by initializing a python session by ```python```, then
+```
+Python 3.10.12 (main, Nov 20 2023, 15:14:05) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import torch
+>>> torch.cuda.is_available()
+True
+```
+If the GPU is not available, consider using the note for all required installation here [get-ready](https://github.com/KhoiDOO/get-ready).To use MTLDOG, simply run the `main.py` script with appropriate command-line arguments. Here's an example of how to run MTLDOG:
 ```
 python main.py -h
 ```
@@ -111,7 +125,7 @@ The dataset includes annotations for various environmental conditions:
 - [x] **Rainy**: Scenes captured under rainy weather conditions.
 
 #### Download
-
+refer to documentation at [DATA.md](./ds/DATA.md)
 </details>
 
 ## Experiemental Conduction
@@ -153,19 +167,55 @@ All avaialble arguments in ```main.py``` are placed in the following table.
 ### Default Scripts
 The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. For the available values for each arguments please refer to .
 ```bash
-python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 12 --pm \
-    --trdms 0 1 \
-    --tkss rec cls \
-    --losses mse ce \
+python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 8 \
+    --trdms 0 1 --tkss rec cls --losses mse ce \
     --m erm --hp ./hparams/erm.json \
     --model hps --at ae --bb base \
-    --seed 0 --tm sup \
-    --dvids 1 \
-    --round 2 --chkfreq 1 --lr 0.001 \
-    --wandb --log --wandb_prj MTLDOG --wandb_entity heartbeats
+    --lr 0.001 --seed 0 \
+    --tm sup --dvids 0 --port 7777 \
+    --round 5000 --chkfreq 100 --grad \
+    --wandb --wandb_prj MTLDOG --wandb_entity heartbeats
 ```
 
 ## Logging
+
+### Verbose Logging
+Toggle logging by using ```--verbose``` argument. The key used for logging has style of ```<domain>/<split>-<in_domain>?-<task>-<metric/loss>```.
+```
+on 725: ROUND: 725
+on 725: KEY                                                                    VALUE
+on 725: ********************************************************************************************************************************************
+on 725: 0/train-in-rec-mse                                                     0.008707582950592041
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 0/train-in-cls-ce                                                      0.2501453757286072
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 10/train-in-rec-mse                                                    0.006822067778557539
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 10/train-in-cls-ce                                                     0.2859261631965637
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 0/train-in-rec-psnr                                                    24.098766326904297
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 0/train-in-cls-acc                                                     0.9375
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 10/train-in-rec-psnr                                                   26.12443733215332
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+on 725: 10/train-in-cls-acc                                                    0.921875
+on 725: --------------------------------------------------------------------------------------------------------------------------------------------
+```
+If ```--grad``` is toggled, the ```cosine similarity``` and the ```dot product``` for share and heads gradients accross tasks and domains are then shown. 
+```
+on 725: grad-share-cos-mat
+on 725: +--------+------------+------------+-----------+----------+
+        |        |      0-rec |      0-cls |    10-rec |   10-cls |
+        |--------+------------+------------+-----------+----------|
+        | 0-rec  |  1.00006   | -0.284746  | 0.0497712 | 0.121551 |
+        | 0-cls  | -0.284746  |  1.0001    | 0.0898833 | 0.724015 |
+        | 10-rec |  0.0497712 |  0.0898833 | 1.00004   | 0.025323 |
+        | 10-cls |  0.121551  |  0.724015  | 0.025323  | 1.00009  |
+        +--------+------------+------------+-----------+----------+
+```
+### Wandb Syncing & Last Syncing
+Using ```--wandb``` to enabe saving your experiment into [WandB](https://wandb.ai/). Consider using ```--synclast``` argument to save right after the whole training procedure is done, in case your internet connection is not good (my case), which will faster your experiment so much.
 
 # Citation
 If you find this project useful for your research, consider cite it to your research paper.
@@ -187,6 +237,8 @@ If you find this project useful for your research, consider cite it to your rese
 - [Nguyen Nam Khanh](https://github.com/khanhkhanhlele)
 - [Nguyen Minh Duong](https://github.com/skydvn)
 - [ChatGPT](https://openai.com/chatgpt), an AI language model developed by OpenAI.
+- [Bing AI](https://www.bing.com/), an artificial intelligence developed by Microsoft.
+
 
 # Contact us
 
