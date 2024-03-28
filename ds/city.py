@@ -132,7 +132,7 @@ class CityScapes(MTLDOGDS):
         for tk in self.tks:
             if tk == 'seg':
                 seg_path = self.seg_dir + f"/{img_name}_gtFine_labelIds.png"
-                tsk_dct[tk] = self.seg_transform['seg'](Image.open(seg_path))
+                tsk_dct[tk] = self.seg_transform(Image.open(seg_path))
             elif tk == 'depth':
                 if self.dm != 'rainy':
                     depth_path = self.dep_dir + f"/{img_name}_disparity.png"
