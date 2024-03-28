@@ -1,4 +1,4 @@
-python main.py --ds city_normal --dt /media/mountHDD3/data_storage/cityscapes/unzip --bs 32 --wk 8 \
+python main.py --ds citynormal --dt /media/mountHDD3/data_storage/cityscapes/unzip --bs 32 --wk 8 \
     --trdms 0 --tkss seg depth --losses ce mse \
     --m erm --hp ./hparams/erm.json \
     --model hps --at segnet --bb basenano \
