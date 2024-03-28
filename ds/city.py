@@ -198,7 +198,7 @@ def check_args(args: Namespace, expect_domain:int):
 
     return args
 
-def ds_city_normal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+def ds_citynormal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 0)
     
@@ -206,7 +206,7 @@ def ds_city_normal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]
 
     return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False)]
 
-def ds_city_foggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+def ds_cityfoggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 1)
     
@@ -214,7 +214,7 @@ def ds_city_foggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False)]
 
-def ds_city_rainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
+def ds_cityrainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 2)
     
