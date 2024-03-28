@@ -105,7 +105,7 @@ class CityScapes(MTLDOGDS):
         if 'depth' in self.tks:
             if domain == 2:
                 self.dep_dir = self.dt + f"/leftImg8bit_trainval_rain/depth_rain/{subset}"
-            elif domain == 1:
+            else:
                 self.dep_dir = self.dt + f"/disparity_trainvaltest/disparity/{subset}"
             
             self.dep_gts = glob(self.dep_dir + "/*/*")
