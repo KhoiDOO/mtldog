@@ -181,7 +181,7 @@ def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
             CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=False)
         )
     
-    args.seg_num_class = 20
+    args.seg_num_classes = 20
     
     return args, tr_dss, te_dss
 
@@ -202,7 +202,7 @@ def ds_citynormal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 0)
     
-    args.seg_num_class = 20
+    args.seg_num_classes = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False)]
 
@@ -210,7 +210,7 @@ def ds_cityfoggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 1)
     
-    args.seg_num_class = 20
+    args.seg_num_classes = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False)]
 
@@ -218,7 +218,7 @@ def ds_cityrainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
     args = check_args(args, 2)
     
-    args.seg_num_class = 20
+    args.seg_num_classes = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=False)]
 
