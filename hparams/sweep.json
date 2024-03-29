@@ -1,0 +1,49 @@
+{
+    "ds" : {
+        "mnist": {
+            "variant" : ["mnist", "mnisteasy", "mnistmed"],
+            "at" : ["ae"],
+            "bb" : ["base"]
+        },
+        "city" : {
+            "variant" : ["city", "citynormal", "cityfoggy", "cityrainy"],
+            "at" : ["segnet"],
+            "bb" : ["basenano", "basesmall", "basemed"]
+        }
+    },
+    "losses" : {
+        "cls" : {
+            "ce" : null,
+            "focal" : {
+                "gamma" : {
+                    "def" : 2,
+                    "tune" : [1, 2, 3, 4, 5]
+                }
+            }
+        },
+        "seg" : {
+            "ce" : null,
+            "focal" : {
+                "gamma" : {
+                    "def" : 2,
+                    "tune" : [1, 2, 3, 4, 5]
+                }
+            },
+            "cb" : null,
+            "cbfocal" : {
+                "gamma" : {
+                    "def" : 2,
+                    "tune" : [1, 2, 3, 4, 5]
+                }
+            },
+            "blv" : {
+                "s" : {
+                    "def" : 1,
+                    "tune" : []
+                }
+            }
+        }
+    },
+    "model" : ["hps"],
+    "m" : ["erm"]
+}
