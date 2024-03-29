@@ -125,6 +125,16 @@ class MTLDOGALGO(nn.Module):
             self.zero_grad_heads_params()
         return share_grads, heads_grads
 
+    def get_grads_dm_share_heads(self, losses: Dict[str, Tensor], detach: bool) -> Dict[str, Tensor | Dict[str, Tensor]]:
+        grad_dict = {}
+        for dmtxt in losses:
+            grad_share, grad_heads = self.get_grads_share_heads(losses = losses[dmtxt])
+            grad_dict[dmtxt] = {
+                'share' : grad_share.detach().clone().cpu() if detach else grad_share, 
+                'heads' : {head : grad_heads[head].detach().clone().cpu() if detach else grad_heads[head] for head in grad_heads}}
+        
+        return grad_dict
+
     # Extract ==================================================================================================================
 
     # Update ==================================================================================================================
