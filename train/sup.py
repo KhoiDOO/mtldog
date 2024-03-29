@@ -10,6 +10,9 @@ from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 from statistics import mean
 
+from arch import MTLDOGARCH
+from algo import MTLDOGALGO
+
 import os, sys, torch
 import torch.multiprocessing as mp
 import torch.distributed as dist
@@ -50,7 +53,7 @@ class SUP(MTLDOGTR):
                 te_loaders.append(tel)
 
         class Agent(self.model, self.algo):
-            def __init__(self, args):
+            def __init__(self, args) -> MTLDOGARCH | MTLDOGALGO:
                 super(Agent, self).__init__(args)
 
                 self.device = gpu
@@ -67,7 +70,7 @@ class SUP(MTLDOGTR):
         remap = False
 
         for round in bar:
-            checkpoint = round % args.chkfreq == 0 and round != 0
+            checkpoint = (round + 1) % args.chkfreq == 0
             
             trdm_batchs = next(zip(*tr_loaders))
             agent.train()
@@ -92,12 +95,7 @@ class SUP(MTLDOGTR):
                                 self.track(trdm_loss_key, train_losses[trdm_txt][tkix].item())
             
             if is_master and args.grad:
-                grad_dict = {}
-                for dmtxt in trdm_txts:
-                    grad_share, grad_heads = agent.module.get_grads_share_heads(losses = train_losses[dmtxt])
-                    grad_dict[dmtxt] = {
-                        'share' : grad_share.detach().clone().cpu(), 
-                        'heads' : {head : grad_heads[head].detach().clone().cpu() for head in grad_heads}}
+                grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
