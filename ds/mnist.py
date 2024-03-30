@@ -72,6 +72,9 @@ class MNIST(MTLDOGDS):
 
 def get_mnist(args: Namespace) -> tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]:
 
+    if root_dir is None:
+        root_dir = "/".join(__file__.split("/")[:-1]) + "/src"
+
     ori_tr = mnist(args.dt, train=True, download=True)
     ori_te = mnist(args.dt, train=False, download=True)
 
