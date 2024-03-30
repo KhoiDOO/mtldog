@@ -17,7 +17,9 @@ import torch.distributed as dist
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
         self.cf_path = args.cfp
-        self.args = Namespace(**read_json(self.cf_path))
+        self.cf_dict = read_json(self.cf_path)
+        self.cf_dict["seed"] = args.seed
+        self.args = Namespace(**self.cf_dict)
 
         self.prepare_device()
         self.prepare_ds()
@@ -86,15 +88,10 @@ class MTLDOGTR:
     def prepare_wandb(self):
         self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
-        hparams_path = self.args.hp
-        params = read_json(path=hparams_path)
-        self.config_dict = vars(self.args)
-        self.config_dict.update(params)
-
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
-            config=self.config_dict,
+            config=self.args,
             name=self.args.run_name,
             force=True
         )
