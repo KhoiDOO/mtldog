@@ -16,10 +16,7 @@ import torch.distributed as dist
 
 class MTLDOGTR:
     def __init__(self, args: Namespace) -> None:
-        self.cf_path = args.cfp
-        self.cf_dict = read_json(self.cf_path)
-        self.cf_dict["seed"] = args.seed
-        self.args = Namespace(**self.cf_dict)
+        self.args = args
 
         self.prepare_device()
         self.prepare_ds()
