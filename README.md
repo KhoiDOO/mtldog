@@ -11,7 +11,7 @@
 
 MTLDOG stands for Multi-Task Learning with Domain Generalization. It is designed to facilitate research and experimentation in the field of multi-task learning, particularly focusing on domain generalization scenarios.
 
-### Features
+## Features
 
 - **CLI Interaction**: Easily interact with MTLDOG via the command line interface.
 - **Flexible Configuration**: Customize various aspects of training, including datasets, tasks, losses, methods, models, and training parameters.
@@ -20,7 +20,7 @@ MTLDOG stands for Multi-Task Learning with Domain Generalization. It is designed
 - **Multi-GPU Support**: Utilize multiple GPUs for training with the capability to select specific GPUs.
 - **Logging and Monitoring**: Utilize logging by using WandB for online and offline saving of training progress.
 
-### Usage
+## Usage
 
 First create a virtual environemnt and install all requirements in ```requirements.txt``` as well as Pytorch version that is suitable for your os and system. Note that the repository is created to be used in Linux-based system, which is not guarantee to work well on other os (i.e. Window, Mac).
 ```
@@ -40,58 +40,64 @@ True
 If the GPU is not available, consider using the note for all required installation here [get-ready](https://github.com/KhoiDOO/get-ready).To use MTLDOG, simply run the `main.py` script with appropriate command-line arguments. Here's an example of how to run MTLDOG:
 ```
 python main.py -h
+
+usage: MTLDOG - Domain Generalization for Multi-task Learning [-h] [--cfp CFP]
+
+options:
+  -h, --help  show this help message and exit
+  --cfp CFP   Configuration path for training
 ```
 
-### Requirements
+## Requirements
 ```
+wheel
 alive-progress==3.1.5
 numpy==1.26.4
 opencv-python==4.9.0.80
 pillow==10.2.0
 PyYAML==6.0.1
-tensorboard==2.16.2
 wandb==0.16.4
 albumentations==1.4.1
 pandas==2.2.1
+tabulate==0.9.0
 torch  # Add PyTorch separately as it may have version-specific installation requirements
 ```
 
-## Table of Contents
-- [Overview](#overview)
-  - [Features](#features)
-  - [Usage](#usage)
-  - [Requirements](#requirements)
-  - [Reference](#reference)
-- [Dataset](#dataset)
-  - [RotateMnist Dataset](#rotatemnist-dataset)
-  - [CityScapes Dataset](#cityscapes-dataset)
-- [Training](#training)
-  - [Common Parameters](#common-parameters)
-  - [Algorithm Hyper-parameters](#algorithm-hyper-parameters)
-  - [Default Scripts](#default-scripts)
-  - [Hyper-parameter Sweep Search](#hyper-parameter-sweep-search)
-- [Logging](#logging)
-- [Citation](#citation)
-- [Contributor](#contributor)
-- [Contact us](#contact-us)
-- [Acknowledgement & Reference](#acknowledgement--reference)
-- [License](#license)
+# Table of Contents
 
-## Dataset
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Usage](#usage)
+4. [Requirements](#requirements)
+5. [Dataset](#dataset)
+   - [RotateMnist Dataset](#rotatemnist-dataset)
+   - [CityScapes Dataset](#cityscapes-dataset)
+6. [Experiment](#experiment)
+7. [Logging](#logging)
+   - [Verbose Logging](#verbose-logging)
+   - [Wandb Syncing & Last Syncing](#wandb-syncing--last-syncing)
+8. [Citation](#citation)
+9. [Contributor](#contributor)
+10. [Contact us](#contact-us)
+11. [Acknowledgement & Reference](#acknowledgement--reference)
+12. [License](#license)
+13. [Detail Parameters](#detail-parameters)
+
+# Dataset
 MTLDOG supports various datasets for multi-task learning experiments. Below are some of the datasets currently available:
 
-### RotateMnist Dataset
+## RotateMnist Dataset
 <details>
   <summary>Detail Information</summary>
 
 The RotateMnist dataset is commonly used for evaluating multi-task learning models on digit classification and image reconstruction tasks across various domains. It consists of rotated MNIST images, where each image is rotated by a certain degree. The dataset provides a challenging setting for multi-task learning, with tasks including:
 
-#### Tasks
+### Tasks
 
 - [x] **Digit Classification**: Predicting the digit label of each image.
 - [x] **Image Reconstruction**: Reconstructing the original image from its rotated versions.
 
-#### Domains
+### Domains
 
 The dataset provides three versions of increasing difficulty, each with different numbers of domains:
 
@@ -99,16 +105,16 @@ The dataset provides three versions of increasing difficulty, each with differen
 - [x] **Medium (6 Domains)**: Contains images rotated across 6 domains.
 - [x] **Hard (10 Domains)**: Contains images rotated across 10 domains.
 
-#### Download
+### Download
 This dataset will be automatically downloaded when conducting the experiments. 
 </details>
 
-### CityScapes Dataset
+## CityScapes Dataset
 <details>
   <summary>Detail Information</summary>
 The CityScapes dataset is a large-scale dataset for semantic urban scene understanding. It contains high-quality pixel-level annotations for urban street scenes, making it suitable for various tasks in computer vision and scene understanding. 
 
-#### Tasks
+### Tasks
 
 Some of the tasks supported by CityScapes include:
 - [x] **Semantic Segmentation**: Predicting the semantic labels of pixels in urban street scenes.
@@ -117,69 +123,64 @@ Some of the tasks supported by CityScapes include:
 - [ ] **Human Detection**: Detecting and localizing human instances in urban scenes.
 - [ ] **3D Object Detection**: Predicting the 3D bounding boxes of objects present in the scene, providing information about their position and size in 3D space.
 
-#### Domains
+### Domains
 The dataset includes annotations for various environmental conditions:
 
 - [x] **Clear**: Scenes captured under clear weather conditions.
 - [x] **Foggy**: Scenes captured under foggy weather conditions.
 - [x] **Rainy**: Scenes captured under rainy weather conditions.
 
-#### Download
+### Download
 refer to documentation at [DATA.md](./ds/DATA.md)
 </details>
 
-## Experiemental Conduction
+# Experiement
 
-### Common Parameters
-All avaialble arguments in ```main.py``` are placed in the following table.
+The `main.py` script is designed to conduct experiments for multi-task learning using a single JSON configuration file (e.g. [example.json](./hparams/example.json)). This file contains various parameters that define the experiment setup, including dataset, batch size, model architecture, optimization parameters, logging options, and more.
+
+The JSON configuration file follows a specific template but *not limit to* with the following fields:
+
 <details>
-  <summary>Detail Information</summary>
+  <summary>Detail Params</summary>
 
-| Parameter     | Description                                                                                       |
-|---------------|---------------------------------------------------------------------------------------------------|
-| --ds          | Dataset in use.                                                                                   |
-| --dt          | Root data directory.                                                                              |
-| --bs          | Batch size.                                                                                       |
-| --wk          | Number of dataset workers.                                                                        |
-| --pm          | Toggle to use pin memory.                                                                         |
-| --trdms       | List of domains used in training.                                                                 |
-| --tkss        | List of tasks used in training.                                                                   |
-| --losses      | Losses of tasks used in training.                                                                 |
-| --m           | Method used in training.                                                                          |
-| --hp          | JSON file path for hyper-parameters of method.                                                    |
-| --model       | Model type (e.g., ae, hps (hard parameter sharing)).                                              |
-| --at          | Architecture type (e.g., ae, unet).                                                               |
-| --bb          | Backbone type (e.g., ae, base, resnet18).                                                         |
-| --seed        | Seed for random number generation.                                                                |
-| --tm          | Training mode (e.g., sup (supervised)).                                                           |
-| --dvids       | List of device IDs used in training.                                                              |
-| --epoch       | Number of epochs used in training.                                                                |
-| --lr          | Learning rate.                                                                                    |
-| --port        | Multi-GPU Training Port.                                                                          |
-| --wandb       | Toggle to use wandb for online saving.                                                            |
-| --log         | Toggle to use tensorboard for offline saving.                                                     |
-| --wandb_prj   | Wandb project name.                                                                               |
-| --wandb_entity| Wandb entity name.                                                                                |
-| --gamma       | Gamma for focal loss.                                                                             |
+- `"ds"`: Name of the dataset to be used for the experiment.
+- `"dt"`: Root data directory path.
+- `"bs"`: Batch size for training.
+- `"wk"`: Number of dataset workers.
+- `"pm"`: Boolean value indicating whether to use pin memory.
 
+- `"trdms"`: List of domains used in training.
+- `"tkss"`: List of tasks used in training.
+- `"losses"`: List of loss functions for each task.
+
+- `"m"`: Method used for training.
+- `"model"`: Type of model architecture.
+- `"at"`: Type of architecture (e.g., autoencoder, unet).
+- `"bb"`: Backbone type (e.g., base, resnet18).
+
+- `"lr"`: Learning rate for optimization.
+- `"seed"`: Random seed for reproducibility.
+- `"tm"`: Training mode (e.g., supervised).
+- `"dvids"`: List of device IDs used in training.
+- `"round"`: Number of training epochs.
+- `"chkfreq"`: Checkpoint frequency.
+- `"port"`: Port for multi-GPU training.
+
+- `"wandb"`: Boolean value indicating whether to use WandB for online logging.
+- `"wandb_prj"`: WandB project name.
+- `"wandb_entity"`: WandB entity name.
+
+- `"grad"`: Boolean value indicating whether to track gradients.
+- `"diseval"`: Boolean value indicating whether to perform distribution evaluation.
+- `"verbose"`: Boolean value indicating whether to print verbose output.
+- `"synclast"`: Boolean value indicating whether to synchronize the last layer during training.
 </details>
 
-### Default Scripts
-The default scripts are available in ```script``` folder, which might help you in conducting experiment. This is one of the example of training script, which conduct a training on ```mnist``` dataset version ```easy``` with two task ```classification (cls)``` and ```image resconstruction (rec)``` associated with two losses ```mean squre error (mse)``` and ```cross-entropy (ce)```. For the available values for each arguments please refer to .
-```bash
-python main.py --ds mnisteasy --dt ./ds/src --bs 64 --wk 8 \
-    --trdms 0 1 --tkss rec cls --losses mse ce \
-    --m erm --hp ./hparams/erm.json \
-    --model hps --at ae --bb base \
-    --lr 0.001 --seed 0 \
-    --tm sup --dvids 0 --port 7777 \
-    --round 5000 --chkfreq 100 --grad \
-    --wandb --wandb_prj MTLDOG --wandb_entity heartbeats
-```
+For all available parameters and keys that can be used in this project are refered to Section [Detail Parameters](#detail-parameters)
 
-## Logging
+# Logging
 
-### Verbose Logging
+## Verbose Logging
 Toggle logging by using ```--verbose``` argument. The key used for logging has style of ```<domain>/<split>-<in_domain>?-<task>-<metric/loss>```.
 ```
 on 725: ROUND: 725
@@ -214,7 +215,7 @@ on 725: +--------+------------+------------+-----------+----------+
         | 10-cls |  0.121551  |  0.724015  | 0.025323  | 1.00009  |
         +--------+------------+------------+-----------+----------+
 ```
-### Wandb Syncing & Last Syncing
+## Wandb Syncing & Last Syncing
 Using ```--wandb``` to enabe saving your experiment into [WandB](https://wandb.ai/). Consider using ```--synclast``` argument to save right after the whole training procedure is done, in case your internet connection is not good (my case), which will faster your experiment so much.
 
 # Citation
@@ -254,3 +255,13 @@ In this part we list all previous projects that did help us in figuring out codi
 # License
 
 This project is licensed under the MIT LICENSE - see the [LICENSE](./LICENSE) file for details.
+
+# Detail Parameters
+
+## Dataset & Models
+
+
+
+## Loss Function
+
+## Method
