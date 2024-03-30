@@ -14,8 +14,6 @@ class MTLDOGALGO(nn.Module):
         self.args: Namespace = args
         self.tkss: List = args.tkss
         self.train_loss_buffer = np.zeros([args.task_num, args.round])
-        self.hparams_path = args.hp
-        self.params = json.load(open(self.hparams_path, 'r'))
 
     # Extract ==================================================================================================================
     def compute_grad_dim_share(self) -> None:
