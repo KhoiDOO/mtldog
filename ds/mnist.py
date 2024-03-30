@@ -71,8 +71,9 @@ class MNIST(MTLDOGDS):
         return img, tsk_dct
 
 def get_mnist(args: Namespace) -> tuple[List[Tensor], List[Tensor], List[Tensor], List[Tensor]]:
+
     if args.dt is None:
-        args.dt = "/".join(__file__.split("/")[:-1]) + "/source"
+        args.dt = "/".join(__file__.split("/")[:-1]) + "/src"
 
     ori_tr = mnist(args.dt, train=True, download=True)
     ori_te = mnist(args.dt, train=False, download=True)

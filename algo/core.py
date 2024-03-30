@@ -14,8 +14,6 @@ class MTLDOGALGO(nn.Module):
         self.args: Namespace = args
         self.tkss: List = args.tkss
         self.train_loss_buffer = np.zeros([args.task_num, args.round])
-        self.hparams_path = args.hp
-        self.params = json.load(open(self.hparams_path, 'r'))
 
     # Extract ==================================================================================================================
     def compute_grad_dim_share(self) -> None:
@@ -124,6 +122,16 @@ class MTLDOGALGO(nn.Module):
             self.zero_grad_share_params()
             self.zero_grad_heads_params()
         return share_grads, heads_grads
+
+    def get_grads_dm_share_heads(self, losses: Dict[str, Tensor], detach: bool) -> Dict[str, Tensor | Dict[str, Tensor]]:
+        grad_dict = {}
+        for dmtxt in losses:
+            grad_share, grad_heads = self.get_grads_share_heads(losses = losses[dmtxt])
+            grad_dict[dmtxt] = {
+                'share' : grad_share.detach().clone().cpu() if detach else grad_share, 
+                'heads' : {head : grad_heads[head].detach().clone().cpu() if detach else grad_heads[head] for head in grad_heads}}
+        
+        return grad_dict
 
     # Extract ==================================================================================================================
 

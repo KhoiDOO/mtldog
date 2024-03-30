@@ -9,9 +9,9 @@ class SegNetEncoder(nn.Module):
 
         self.init_ch = init_ch
 
-        self.downconv0 = DownConv2(3, self.init_ch, kernel_size=3),
-        self.downconv1 = DownConv2(self.init_ch, self.init_ch*2, kernel_size=3),
-        self.downconv2 = DownConv3(self.init_ch*2, self.init_ch*4, kernel_size=3),
+        self.downconv0 = DownConv2(3, self.init_ch, kernel_size=3)
+        self.downconv1 = DownConv2(self.init_ch, self.init_ch*2, kernel_size=3)
+        self.downconv2 = DownConv3(self.init_ch*2, self.init_ch*4, kernel_size=3)
         self.downconv3 = DownConv3(self.init_ch*4, self.init_ch*8, kernel_size=3)
     
     def forward(self, x: Tensor) -> Tuple[Tensor]:
@@ -29,9 +29,9 @@ class SegNetDecoder(nn.Module):
         self.seg_num_class = seg_num_classes
         self.init_ch = init_ch
 
-        self.upconv0 = UpConv3(self.init_ch*8, self.init_ch*4, kernel_size=3),
-        self.upconv1 = UpConv3(self.init_ch*4, self.init_ch*2, kernel_size=3),
-        self.upconv2 = UpConv2(self.init_ch*2, self.init_ch, kernel_size=3),
+        self.upconv0 = UpConv3(self.init_ch*8, self.init_ch*4, kernel_size=3)
+        self.upconv1 = UpConv3(self.init_ch*4, self.init_ch*2, kernel_size=3)
+        self.upconv2 = UpConv2(self.init_ch*2, self.init_ch, kernel_size=3)
         self.upconv3 = UpConv2(self.init_ch, self.seg_num_class, kernel_size=3)
     
     def forward(self, input: Tensor) -> Tuple[Tensor]:

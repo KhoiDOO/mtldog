@@ -1,0 +1,48 @@
+{
+    "ds" : {
+        "mnist": {
+            "variant" : ["mnist", "mnisteasy", "mnistmed"],
+            "at" : ["ae"],
+            "bb" : ["base"],
+            "dt" : null,
+            "bs" : [32, 64, 128, 256, 512],
+            "lr" : [0.0001, 0.01],
+            "pm" : [true, false],
+            "tkss" : ["rec", "cls"]
+        },
+        "city" : {
+            "variant" : ["city", "citynormal", "cityfoggy", "cityrainy"],
+            "at" : ["segnet"],
+            "bb" : ["basenano", "basesmall", "basemed"],
+            "dt" : "/media/mountHDD3/data_storage/cityscapes/unzip",
+            "bs" : [32, 64],
+            "lr" : [0.001, 0.01],
+            "pm" : [true, false],
+            "tkss" : ["seg", "depth"]
+        }
+    },
+    "losses" : {
+        "cls" : {
+            "ce" : null,
+            "focal" : {"gamma" : [1, 2, 3, 4, 5]}
+        },
+        "seg" : {
+            "ce" : null,
+            "focal" : {"gamma" : [1, 2, 3, 4, 5]},
+            "cb" : null,
+            "cbfocal" : {"gamma" : [1, 2, 3, 4, 5]},
+            "blv" : {"s" : [1]}
+        },
+        "depth" : {
+            "mse" : null
+        }
+    },
+    "model" : ["hps"],
+    "m" : {
+        "erm" : null
+    },
+    "grad" : [true, false],
+    "diseval" : [true, false],
+    "verbose" : [true, false],
+    "synclast" : [true, false]
+}

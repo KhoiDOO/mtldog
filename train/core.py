@@ -85,15 +85,10 @@ class MTLDOGTR:
     def prepare_wandb(self):
         self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
 
-        hparams_path = self.args.hp
-        params = read_json(path=hparams_path)
-        self.config_dict = vars(self.args)
-        self.config_dict.update(params)
-
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
             entity=self.args.wandb_entity,
-            config=self.config_dict,
+            config=self.args,
             name=self.args.run_name,
             force=True
         )
