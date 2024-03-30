@@ -9,7 +9,7 @@
     "tkss" : ["cls", "rec"],
     "losses" : ["ce", "mse"],
     
-    "m" : "uw",
+    "m" : "rlw",
     "model" : "hps",
     "at" : "ae",
     "bb" : "base",
