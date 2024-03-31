@@ -229,8 +229,8 @@ class MTLDOGTR:
                 
                     main_grad_dict[f'grad-heads-{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
 
-                main_grad_dict['grad-heads-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-                main_grad_dict['grad-heads-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+                main_grad_dict[f'grad-heads-{tk}-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
+                main_grad_dict[f'grad-heads-{tk}-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
 
                 if sol_grad_head is not None:
                     main_grad_dict[f'sol-grad-head-{tk}-vec'] = sol_grad_head[tk]
