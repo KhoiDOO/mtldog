@@ -41,6 +41,12 @@ class HPS(MTLDOGARCH):
     
     def zero_grad_heads_params(self):
         self.decoder.zero_grad()
+
+    def name_share_params(self) -> None:
+        return [n for n, _ in self.encoder.named_parameters()]
+    
+    def name_heads_params(self) -> None:
+        return {tk : [n for n, _ in self.decoder[tk].named_parameters()] for tk in self.tkss}
     
     def forward(self, x: Tensor) -> Tensor:
         enclat = self.encoder(x)

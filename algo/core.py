@@ -1,19 +1,21 @@
 from typing import Dict, List, Tuple
 from argparse import Namespace
 from torch import nn, Tensor
+from arch import MTLDOGARCH
 
 import json
 import torch
 import numpy as np
 
 class MTLDOGALGO(nn.Module):
-    def __init__(self):
+    def __init__(self) -> MTLDOGARCH:
         super(MTLDOGALGO, self).__init__()
 
     def init_param(self, args: Namespace) -> None:
         self.args: Namespace = args
         self.tkss: List = args.tkss
         self.train_loss_buffer = np.zeros([args.task_num, args.round])
+        self.generator = torch.Generator(device=self.device).manual_seed(args.seed)
 
     # Extract ==================================================================================================================
     def compute_grad_dim_share(self) -> None:
@@ -132,10 +134,41 @@ class MTLDOGALGO(nn.Module):
                 'heads' : {head : grad_heads[head].detach().clone().cpu() if detach else grad_heads[head] for head in grad_heads}}
         
         return grad_dict
+    
+    def hess_approx(self, params, grads):
+
+        hess = [0] * len(grads)
+
+        for i in range(self.args.spcnt):
+            zs = [torch.randint(0, 2, p.size(), generator=self.generator, device=p.device) * 2.0 - 1.0 for p in params]  # Rademacher distribution {-1.0, 1.0}
+            h_zs = torch.autograd.grad(grads, params, grad_outputs=zs, only_inputs=True, retain_graph=True)
+            for idx, (h_z, z, p) in enumerate(zip(h_zs, zs, params)):
+                hess[idx] += h_z * z / self.spcnt  # approximate the expected values of z*(H@z)
+    
+    def get_grads_hess_share_heads(self, losses: Dict[str, Tensor], detach: bool):
+
+        name_share = self.name_share_params()
+        name_heads = self.name_heads_params()
+
+        for dm in losses:
+            task_losses = losses[dm]
+            for tkidx, tk in enumerate(self.tkss):
+                task_losses[tkidx].backward(retain_graph=True)
+
+                # share_params = self.get_share_params()
+                # heads_params = self.get_heads_params()
+        
+                temp_share_grad = [p.grad for p in self.get_share_params()]
+                temp_heads_grad = {tk : [p.grad for p in self.get_heads_params()[tk]] for tk in self.tkss}
+
+                temp_share_hess = self.hess_approx(self.get_share_params(), temp_share_grad)
+                
+
+
 
     # Extract ==================================================================================================================
 
-    # Update ==================================================================================================================
+    # Update ===================================================================================================================
     def reset_grad_share(self, new_grads: Tensor):
         count = 0
         for param in self.get_share_params():
@@ -169,4 +202,4 @@ class MTLDOGALGO(nn.Module):
         """
 
         raise NotImplementedError()
-    # Update ==================================================================================================================
+    # Update ===================================================================================================================

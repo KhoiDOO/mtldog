@@ -94,8 +94,11 @@ class SUP(MTLDOGTR):
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, train_losses[trdm_txt][tkix].item())
             
-            if is_master and args.grad:
-                grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
+            if is_master:
+                if args.grad:
+                    grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
+                if args.hess:
+                    agent.module.get_grads_hess_share_heads(losses = train_losses, detach = True)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
