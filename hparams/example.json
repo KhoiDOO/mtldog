@@ -9,7 +9,7 @@
     "tkss" : ["cls", "rec"],
     "losses" : ["ce", "mse"],
     
-    "m" : "rlw",
+    "m" : "erm",
     "model" : "hps",
     "at" : "ae",
     "bb" : "base",
@@ -19,8 +19,8 @@
     "tm" : "sup",
     "dvids" : ["0"],
     "round" : 5000,
-    "chkfreq" : 100,
-    "port" : 7777,
+    "chkfreq" : 5000,
+    "port" : 8080,
 
     "wandb" : false,
     "wandb_prj" : "MTLDOG",
