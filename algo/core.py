@@ -14,6 +14,7 @@ class MTLDOGALGO(nn.Module):
     def init_param(self, args: Namespace) -> None:
         self.args: Namespace = args
         self.tkss: List = args.tkss
+        self.trdms: List = args.trdms
         self.train_loss_buffer = np.zeros([args.task_num, args.round])
         self.generator = torch.Generator(device=self.device).manual_seed(args.seed)
 
@@ -135,35 +136,56 @@ class MTLDOGALGO(nn.Module):
         
         return grad_dict
     
-    def hess_approx(self, params, grads):
-
-        hess = [0] * len(grads)
-
-        for i in range(self.args.spcnt):
-            zs = [torch.randint(0, 2, p.size(), generator=self.generator, device=p.device) * 2.0 - 1.0 for p in params]  # Rademacher distribution {-1.0, 1.0}
-            h_zs = torch.autograd.grad(grads, params, grad_outputs=zs, only_inputs=True, retain_graph=True)
-            for idx, (h_z, z, p) in enumerate(zip(h_zs, zs, params)):
-                hess[idx] += h_z * z / self.spcnt  # approximate the expected values of z*(H@z)
+    def hess_approx_gauss_newton_barlett(self, grads):
+        return [x * x for x in grads]
     
-    def get_grads_hess_share_heads(self, losses: Dict[str, Tensor], detach: bool):
+    def get_grads_hess_dm_share_heads(self, losses: Dict[str, Tensor], detach: bool):
 
-        name_share = self.name_share_params()
-        name_heads = self.name_heads_params()
+        hess_dict = {}
 
         for dm in losses:
             task_losses = losses[dm]
+
+            task_dict = {tk : None for tk in self.tkss}
+
             for tkidx, tk in enumerate(self.tkss):
                 task_losses[tkidx].backward(retain_graph=True)
 
-                # share_params = self.get_share_params()
-                # heads_params = self.get_heads_params()
+                name_share = self.name_share_params_require_grad()
+                name_heads = self.name_heads_params_require_grad()[tk]
+
+                share_params = self.get_share_params_require_grad()
+                heads_params = self.get_heads_params_require_grad()
         
-                temp_share_grad = [p.grad for p in self.get_share_params()]
-                temp_heads_grad = {tk : [p.grad for p in self.get_heads_params()[tk]] for tk in self.tkss}
-
-                temp_share_hess = self.hess_approx(self.get_share_params(), temp_share_grad)
+                temp_share_grad = [p.grad for p in share_params]
+                temp_heads_grad = [p.grad for p in heads_params[tk]]
                 
+                temp_share_hess = self.hess_approx_gauss_newton_barlett(temp_share_grad)
+                temp_heads_hess = self.hess_approx_gauss_newton_barlett(temp_heads_grad)
 
+                share_grad_hess_dict = {'name':name_share, 'grad':temp_share_grad, 'hess':temp_share_hess}
+                head_grad_hess_dict = {'name':name_heads, 'grad':temp_heads_grad, 'hess':temp_heads_hess}
+
+                task_dict[tk] = {'share' : share_grad_hess_dict, 'head' : head_grad_hess_dict}
+            
+            hess_dict[dm] = task_dict
+        
+        return hess_dict
+
+        """
+        {
+            "dmtxt" : {
+                "tk" {
+                    "share" : {
+                       f"{name}" : {'grad' : Tensor, 'hess' : Tensor}, 
+                    },
+                    "heads" : {
+                        f"{name}" : {'grad' : Tensor, 'hess' : Tensor}, 
+                    }
+                }
+            }
+        }
+        """
 
 
     # Extract ==================================================================================================================

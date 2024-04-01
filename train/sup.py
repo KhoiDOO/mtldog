@@ -98,7 +98,7 @@ class SUP(MTLDOGTR):
                 if args.grad:
                     grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
                 if args.hess:
-                    agent.module.get_grads_hess_share_heads(losses = train_losses, detach = True)
+                    hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses, detach = True)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
@@ -170,12 +170,21 @@ class SUP(MTLDOGTR):
                 if args.wandb:
                     if not args.synclast:
                         if checkpoint:
-                            self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                            self.sync(
+                                grad_dict=grad_dict if args.grad else None, 
+                                sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head,
+                                hess_dict=hess_dict if args.hess else None)
                     else:
-                        self.buffer(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                        self.buffer(
+                            grad_dict=grad_dict if args.grad else None, 
+                            sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head,
+                            hess_dict=hess_dict if args.hess else None)
 
                 elif args.verbose:
-                    self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                    self.logging(
+                        grad_dict=grad_dict if args.grad else None, 
+                        sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head,
+                        hess_dict=hess_dict if args.hess else None)
             
             dist.barrier()
             if checkpoint:

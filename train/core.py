@@ -4,7 +4,6 @@ from statistics import mean
 from torch import Tensor
 from .utils import *
 from pandas import DataFrame
-from tabulate import tabulate
 from glob import glob
 from alive_progress import alive_it
 
@@ -125,24 +124,29 @@ class MTLDOGTR:
             self.log[key] = [value]
     
     def log_extract(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor], 
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]):
         
         mean_log = {k : mean(self.log[k]) for k in self.log}
         
-        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+        main_grad_dict = preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, args=self.args)
+
+        grad_hess_dict = preprocess_grad_hess_adv(hess_dict=hess_dict, args=self.args)
         
         mean_log.update(main_grad_dict)
         
         self.log = {}
+
         return mean_log
     
     def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
                 sol_grad_share: Tensor | None = None, 
                 sol_grad_head: Dict[str, Tensor] | None = None, 
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None,
                 mode='realtime'):
 
         if mode == 'realtime':
-            mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+            mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
 
             for key in mean_log:
                 if 'mat' in key:
@@ -160,8 +164,10 @@ class MTLDOGTR:
             raise ValueError(f"mode must be one of ['realtime', 'last'], but found {mode} instead")
     
     def buffer(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
-        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor],
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]):
+        
+        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
 
         for key in mean_log:
             if 'mat' in key:
@@ -171,112 +177,14 @@ class MTLDOGTR:
         self.round += 1
     
     def logging(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]) -> None:
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor],
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]) -> None:
         
-        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
 
-        print(f"ROUND: {self.round}")
-        print("{:<70} {:<70}".format('KEY', 'VALUE'))
-        print("*"*140)
-        for key, value in mean_log.items():
-            if not isinstance(value, Tensor) and not (isinstance(value, DataFrame)):
-                print("{:<70} {:<70}".format(key, value))
-                print("-"*140)
-        
-        for key, value in mean_log.items():
-            if isinstance(value, DataFrame):
-                print(key)
-                print(tabulate(value, headers='keys', tablefmt='psql'))
+        show_log(mean_log, self.round)
         
         self.round += 1
-    
-    def preprocess_grad_train(self, 
-                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
-                              sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor]) -> Dict[str, Tensor | DataFrame]:
-        
-        main_grad_dict = {}
-        if grad_dict is not None:
-            share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
-            head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
-
-            share_grad_keys = []
-            share_grad_vectors = []
-            for dmtxt in share_grad_dict:
-                for tkidx, tk in enumerate(self.args.tkss):
-                    share_grad_keys.append(f'{dmtxt}-{tk}')
-                    share_grad_vectors.append(share_grad_dict[dmtxt][tkidx])
-
-                    main_grad_dict[f'grad-share-{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
-            
-            main_grad_dict['grad-share-cos-mat'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-            main_grad_dict['grad-share-dot-mat'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-
-            if sol_grad_share is not None:
-                main_grad_dict[f'sol-grad-share-vec'] = sol_grad_share
-                share_grad_keys.append('sol-grad')
-                share_grad_vectors.append(sol_grad_share)
-
-                main_grad_dict['sol-grad-share-cos-mat'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-                main_grad_dict['sol-grad-share-dot-mat'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-
-            for _, tk in enumerate(self.args.tkss):
-                head_grad_keys = []
-                head_grad_vectors = []
-                for dmtxt in head_grad_dict:
-                    head_grad_keys.append(f'{dmtxt}-{tk}')
-                    head_grad_vectors.append(head_grad_dict[dmtxt][tk])
-                
-                    main_grad_dict[f'grad-heads-{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
-
-                main_grad_dict[f'grad-heads-{tk}-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-                main_grad_dict[f'grad-heads-{tk}-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-
-                if sol_grad_head is not None:
-                    main_grad_dict[f'sol-grad-head-{tk}-vec'] = sol_grad_head[tk]
-                    head_grad_keys.append(f'sol-grad-head-{tk}-vec')
-                    head_grad_vectors.append(sol_grad_head[tk])
-
-                    main_grad_dict[f'sol-grad-heads-{tk}-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-                    main_grad_dict[f'sol-grad-heads-{tk}-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-        
-        return main_grad_dict
-
-    def track_sync_grad_train(self, 
-                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
-                              sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor]):
-        
-        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-
-        for key, item in main_grad_dict.items():
-            if 'vec' in key:
-                self.logrun.log({key : item})
-            elif 'mat' in key:
-                self.logrun.log({key : wandb.Table(dataframe=item)})
-            else:
-                print(key)
-
-    def show_table_grad_train(self, 
-                              grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], 
-                              sol_grad_share: Tensor, 
-                              sol_grad_head: Dict[str, Tensor]):
-        
-        main_grad_dict = self.preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-
-        mat_main_grad_dict = {key : item for key, item in main_grad_dict.items() if 'mat' in key}
-
-        for key, item in mat_main_grad_dict.items():
-            print(key)
-            print(tabulate(item, headers='keys', tablefmt='psql'))
-    
-    def show_log(self, round: int, stage:str):
-        print(f"ROUND: {round} ~~~ {stage}")
-        print("{:<40} {:<40}".format('KEY', 'VALUE'))
-        mean_log = {k : mean(self.log[k]) for k in self.log}
-        for key, value in mean_log.items():
-            print("{:<40} {:<40}".format(key, value))
-        self.log = {}
     
     def run(self):
         not NotImplementedError()
