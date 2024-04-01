@@ -157,8 +157,8 @@ class MTLDOGALGO(nn.Module):
                 share_params = self.get_share_params_require_grad()
                 heads_params = self.get_heads_params_require_grad()
         
-                temp_share_grad = [p.grad for p in share_params]
-                temp_heads_grad = [p.grad for p in heads_params[tk]]
+                temp_share_grad = [p.grad.detach().clone().cpu() if detach else p.grad for p in share_params]
+                temp_heads_grad = [p.grad.detach().clone().cpu() if detach else p.grad for p in heads_params[tk]]
                 
                 temp_share_hess = self.hess_approx_gauss_newton_barlett(temp_share_grad)
                 temp_heads_hess = self.hess_approx_gauss_newton_barlett(temp_heads_grad)
@@ -176,12 +176,8 @@ class MTLDOGALGO(nn.Module):
         {
             "dmtxt" : {
                 "tk" {
-                    "share" : {
-                       f"{name}" : {'grad' : Tensor, 'hess' : Tensor}, 
-                    },
-                    "heads" : {
-                        f"{name}" : {'grad' : Tensor, 'hess' : Tensor}, 
-                    }
+                    "share" : {'name' : [Tensor], 'grad' : [Tensor], 'hess' : [Tensor]},
+                    "heads" : {'name' : [Tensor], 'grad' : [Tensor], 'hess' : [Tensor]}
                 }
             }
         }

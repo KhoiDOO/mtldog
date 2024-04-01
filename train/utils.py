@@ -11,10 +11,6 @@ import json, hashlib
 import torch
 import pickle
 
-
-SPACE = 50
-
-
 def save_json(dct: Dict, path: str) -> None:
     with open(path, 'w') as outfile:
         json.dump(dct, outfile)
@@ -43,6 +39,9 @@ def cosine_similarity(vectors: List[Tensor]) -> np.array:
     cos_simi_mat = cossim(vectors, vectors)
     return cos_simi_mat
 
+def symmetry_cossine_similarity(lst_a: List[Tensor], lst_b: List[Tensor]) -> List[float]:
+    return [cossim(g.flatten().unsqueeze(0).numpy(), h.flatten().unsqueeze(0).numpy()).item() for g,h in zip(lst_a, lst_b)]
+
 def dot_similarity(vectors: List[Tensor]) -> np.array:
     vectors:np.array = torch.stack(vectors).numpy()
     dot_simi_mat = np.matmul(vectors, vectors.T)
@@ -57,13 +56,21 @@ def cosine_dataframe(keys: List[str], vectors: List[Tensor]):
 def dot_dataframe(keys: List[str], vectors: List[Tensor]):
     return matrix_dataframe(keys=keys, mat=dot_similarity(vectors=vectors))
 
+def distinct_pairs(lst: List):
+    _lst = []
+    for i, x in enumerate(lst):
+        for j, y in enumerate(lst[i+1:]):
+            _lst.append((x, y))
+    return _lst
+
 def show_log(mean_log: Dict, round: int):
     print(f"ROUND: {round}")
     print("{:<70} {:<70}".format('KEY', 'VALUE'))
     print("*"*140)
 
-    share_table = {}
-    heads_table = {}
+    share_grad_table = {}
+    heads_grad_table = {}
+    share_gradlw_table = {}
 
     for key, value in mean_log.items():
         if not isinstance(value, Tensor) and not (isinstance(value, DataFrame)):
@@ -71,13 +78,18 @@ def show_log(mean_log: Dict, round: int):
             print("-"*140)
 
         elif isinstance(value, DataFrame):
-            if 'share' in key:
-                share_table[key] = tabulate(value, headers='keys', tablefmt='psql')
-            else:
-                heads_table[key] = tabulate(value, headers='keys', tablefmt='psql')
+            if 'grad' in key:
+                if 'lw' in key:
+                    share_gradlw_table[key] = tabulate(value, headers='keys', tablefmt='psql')
+                else:
+                    if 'share' in key:
+                        share_grad_table[key] = tabulate(value, headers='keys', tablefmt='psql')
+                    else:
+                        heads_grad_table[key] = tabulate(value, headers='keys', tablefmt='psql')
     
-    print(table_cascade(share_table))
-    print(table_cascade(heads_table))
+    print(table_cascade(share_grad_table))
+    print(table_cascade(heads_grad_table))
+    print(table_cascade(share_gradlw_table))
     
 
 def table_cascade(table_dict: Dict[str, str]):
@@ -147,11 +159,29 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
     for dm, dm_dict in hess_dict.items():
         for tk, tk_dict in dm_dict.items():
             share_dict = tk_dict["share"]
-            heads_dict = tk_dict["head"]
+            head_dict = tk_dict["head"]
 
-            for _tk in args.tkss:
-                if _tk == tk:
-                    continue
-                key = f"grad-lw-{dm}-{tk}-vs-{_tk}-mat"
+            for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
+                grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad
+                grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess
 
-                grad_flat = [g.flatten() for g in share_dict['grad']]
+            for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
+                grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad
+                grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
+    
+
+    # layer-wise task-wise cosine matrix
+    task_pairs = distinct_pairs(args.tkss)
+    for dm, dm_dict in hess_dict.items():
+        share_dct = {'layer-name' : dm_dict[args.tkss[0]]['share']['name']}
+
+        for tk_i, tk_j in task_pairs:
+
+            tk_dict_i = dm_dict[tk_i]
+            tk_dict_j = dm_dict[tk_j]
+
+            share_dct[f'{tk_i}-vs-{tk_j}'] = symmetry_cossine_similarity(tk_dict_i['share']['grad'], tk_dict_j['share']['grad'])
+
+        grad_hess_dict[f'grad-share-{dm}-lw-mat'] = pd.DataFrame(share_dct)
+    
+    return grad_hess_dict

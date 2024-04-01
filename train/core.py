@@ -134,6 +134,8 @@ class MTLDOGTR:
         grad_hess_dict = preprocess_grad_hess_adv(hess_dict=hess_dict, args=self.args)
         
         mean_log.update(main_grad_dict)
+
+        mean_log.update(grad_hess_dict)
         
         self.log = {}
 

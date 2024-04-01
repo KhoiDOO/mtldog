@@ -1,3 +1,4 @@
+from torch.nn.modules import Module
 from .core import MTLDOGARCH
 from . import subnet
 from torch import Tensor
@@ -29,24 +30,12 @@ class HPS(MTLDOGARCH):
                 raise ValueError(f"decoder architecture key {dec_key} is not available in {[x for x in MODEL_MAP.keys() if 'decoder' in x]}")
 
             self.decoder.add_module(name=tk, module=MODEL_MAP[dec_key](args))
-
-    def get_share_params(self) -> Tensor:
-        return self.encoder.parameters()
-
-    def get_heads_params(self) -> Dict[str, Tensor]:
-        return {tk : self.decoder[tk].parameters() for tk in self.args.tkss}
-
-    def zero_grad_share_params(self):
-        self.encoder.zero_grad()
+            
+    def get_share_module(self) -> Module:
+        return self.encoder
     
-    def zero_grad_heads_params(self):
-        self.decoder.zero_grad()
-    
-    def name_share_params_require_grad(self) -> None:
-        return ['conv.' + n if len(p.size()) == 4 else 'lin.' + n for n, p in self.encoder.named_parameters() if p.grad is not None]
-    
-    def name_heads_params_require_grad(self) -> None:
-        return {tk : ['conv.' + n if len(p.size()) == 4 else 'lin.' + n for n, p in self.decoder[tk].named_parameters() if p.grad is not None] for tk in self.tkss}
+    def get_heads_module(self) -> ModuleDict:
+        return self.decoder
     
     def forward(self, x: Tensor) -> Tensor:
         enclat = self.encoder(x)
