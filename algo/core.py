@@ -159,6 +159,9 @@ class MTLDOGALGO(nn.Module):
         
                 temp_share_grad = [p.grad.detach().clone().cpu() if detach else p.grad for p in share_params]
                 temp_heads_grad = [p.grad.detach().clone().cpu() if detach else p.grad for p in heads_params[tk]]
+
+                self.zero_grad_share_params()
+                self.zero_grad_heads_params()
                 
                 temp_share_hess = self.hess_approx_gauss_newton_barlett(temp_share_grad)
                 temp_heads_hess = self.hess_approx_gauss_newton_barlett(temp_heads_grad)

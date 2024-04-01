@@ -184,4 +184,7 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
 
         grad_hess_dict[f'grad-share-{dm}-lw-mat'] = pd.DataFrame(share_dct)
     
+    dm_pairs = distinct_pairs(args.trdms)
+    
+
     return grad_hess_dict
