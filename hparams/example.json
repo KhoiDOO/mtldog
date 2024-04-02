@@ -19,10 +19,10 @@
     "tm" : "sup",
     "dvids" : ["0"],
     "round" : 1,
-    "chkfreq" : 5000,
+    "chkfreq" : 1,
     "port" : 8080,
 
-    "wandb" : false,
+    "wandb" : true,
     "wandb_prj" : "MTLDOG",
     "wandb_entity" : "heartbeats",
     
@@ -31,6 +31,6 @@
     "spcnt" : 1,
     "diseval" : false,
     "verbose" : true,
-    "extend_verbose" : false,
+    "extend_verbose" : true,
     "synclast" : false
 }
