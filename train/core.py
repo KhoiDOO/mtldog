@@ -184,7 +184,7 @@ class MTLDOGTR:
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
 
-        show_log(mean_log, self.round)
+        show_log(mean_log, self.round, self.args)
         
         self.round += 1
     

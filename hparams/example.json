@@ -31,5 +31,6 @@
     "spcnt" : 1,
     "diseval" : false,
     "verbose" : true,
+    "extend_verbose" : false,
     "synclast" : false
 }

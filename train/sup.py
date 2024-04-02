@@ -98,7 +98,7 @@ class SUP(MTLDOGTR):
                 if args.grad:
                     grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
                 if args.hess:
-                    hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses, detach = True)
+                    hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
