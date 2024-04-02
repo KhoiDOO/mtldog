@@ -187,8 +187,8 @@ class MTLDOGALGO(nn.Module):
 
                 task_dict[tk] = {'share':share_grad_hess_dict, 'head':head_grad_hess_dict}
 
-                self.zero_grad_share_params()
-                self.zero_grad_heads_params()
+                # self.zero_grad_share_params()
+                # self.zero_grad_heads_params()
             
             hess_dict[dm] = task_dict
         

@@ -169,11 +169,10 @@ class SUP(MTLDOGTR):
             if is_master:
                 if args.wandb:
                     if not args.synclast:
-                        if checkpoint:
-                            self.sync(
-                                grad_dict=grad_dict if args.grad else None, 
-                                sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head,
-                                hess_dict=hess_dict if args.hess else None)
+                        self.sync(
+                            grad_dict=grad_dict if args.grad else None, 
+                            sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head,
+                            hess_dict=hess_dict if args.hess else None)
                     else:
                         self.buffer(
                             grad_dict=grad_dict if args.grad else None, 

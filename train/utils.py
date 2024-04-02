@@ -135,13 +135,13 @@ def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tens
                 share_grad_keys.append(f'{dmtxt}-{tk}')
                 share_grad_vectors.append(share_grad_dict[dmtxt][tkidx])
 
-                main_grad_dict[f'grad-share/{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx].numpy()
+                main_grad_dict[f'grad-share/{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
         
         main_grad_dict['grad-share-cos-mat'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
         main_grad_dict['grad-share-dot-mat'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
 
         if sol_grad_share is not None:
-            main_grad_dict[f'grad-share/sol-vec'] = sol_grad_share.numpy()
+            main_grad_dict[f'grad-share/sol-vec'] = sol_grad_share
             share_grad_keys.append('sol-grad')
             share_grad_vectors.append(sol_grad_share)
 
@@ -155,13 +155,13 @@ def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tens
                 head_grad_keys.append(f'{dmtxt}-{tk}')
                 head_grad_vectors.append(head_grad_dict[dmtxt][tk])
             
-                main_grad_dict[f'grad-heads/{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk].numpy()
+                main_grad_dict[f'grad-heads/{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
 
             main_grad_dict[f'grad-heads-{tk}-cos-mat'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
             main_grad_dict[f'grad-heads-{tk}-dot-mat'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
 
             if sol_grad_head is not None:
-                main_grad_dict[f'grad-head/sol-{tk}-vec'] = sol_grad_head[tk].numpy()
+                main_grad_dict[f'grad-head/sol-{tk}-vec'] = sol_grad_head[tk]
                 head_grad_keys.append(f'sol-{tk}-vec')
                 head_grad_vectors.append(sol_grad_head[tk])
 
@@ -185,20 +185,20 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
 
             for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
                 
-                grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad.flatten().numpy()
-                grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess.flatten().numpy()
+                grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad.flatten()
+                grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess.flatten()
                 temp_eigen = lw_eigen(hess)
-                grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen.flatten().numpy()
+                grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen.flatten()
             
-            grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/vec"] = hess_eigen(share_dict['hess']).flatten().numpy()
+            grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/vec"] = hess_eigen(share_dict['hess']).flatten()
 
             for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
-                grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad.flatten().numpy()
-                grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess.flatten().numpy()
+                grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad.flatten()
+                grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess.flatten()
                 temp_eigen = lw_eigen(hess)
-                grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen.flatten().numpy()
+                grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen.flatten()
             
-            grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/vec"] = hess_eigen(share_dict['hess']).flatten().numpy()
+            grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/vec"] = hess_eigen(share_dict['hess']).flatten()
 
     # layer-wise task-wise cosine matrix
     task_pairs = distinct_pairs(args.tkss)
