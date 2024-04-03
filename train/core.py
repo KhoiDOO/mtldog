@@ -75,7 +75,7 @@ class MTLDOGTR:
         self.model = self.model_dct[f'model_{self.args.model}']()
 
     def prepare_wandb(self):
-        self.args.run_name = self.run_name = f'{self.args.m}__{self.args.ds}__{self.args.hashcode}'
+        self.args.run_name = self.run_name = f'{self.args.hashcode}'
 
         self.logrun = wandb.init(
             project=self.args.wandb_prj,
@@ -84,6 +84,8 @@ class MTLDOGTR:
             name=self.args.run_name,
             force=True
         )
+
+        self.logart = []
     
     def prepare_loss(self):
         loss_map = vars(loss)
@@ -98,17 +100,6 @@ class MTLDOGTR:
             if len(self.args.tkss) == 1 and len(self.args.trdms) == 1:
                 self.args.grad = False
                 print("Force <args.grad> to be False as len(args.tkss) = 1 and len(rgs.trdms) = 1")
-    
-    def log_wbmodel(self):
-        if os.path.exists(self.best_model_path):
-            self.logrun.log_model(path=self.best_model_path, name=f'{self.run_name}-best-model')
-        else:
-            raise Exception(f'best model path is not exist at {self.best_model_path}')
-        
-        if os.path.exists(self.last_model_path):
-            self.logrun.log_model(path=self.last_model_path, name=f'{self.run_name}-last-model')
-        else:
-            raise Exception(f'last model path is not exist at {self.last_model_path}')
     
     def track(self, key: str, value: float):
         if key in self.log:
@@ -136,13 +127,15 @@ class MTLDOGTR:
 
     def postprocess_log(self, log_dict: Dict[str, Tensor | DataFrame| float]):
 
-        for key in log_dict:
+        copy_log_dict = log_dict.copy()
+
+        for key in copy_log_dict:
             if 'tab' in key:
-                log_dict[key] = wandb.Table(dataframe=log_dict[key])
+                copy_log_dict[key] = wandb.Table(dataframe=copy_log_dict[key])
 
-        non_vec_dict = {key: value for key, value in log_dict.items() if 'vec' not in key}
+        non_vec_dict = {key: value for key, value in copy_log_dict.items() if 'vec' not in key}
 
-        return non_vec_dict, log_dict
+        return non_vec_dict
 
     
     def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
@@ -151,20 +144,46 @@ class MTLDOGTR:
                 hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None):
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
-        non_vec_dict, main_log_dict = self.postprocess_log(mean_log)
+        nonvec_dict = self.postprocess_log(mean_log)
 
         raw_path = self.save_dir + f'/main_log_round_{self.round}.pickle'
-        save_pickle(dct=main_log_dict, path=raw_path)
+        save_pickle(dct=mean_log, path=raw_path)
         
         if self.args.wandb:
-            self.logrun.log(non_vec_dict)
-            raw_artifact = wandb.Artifact(name=f"raw_{self.round}", type="log")
-            raw_artifact.add_file(local_path=raw_path, skip_cache=True)
-            self.logrun.log_artifact(raw_artifact)
+            self.logart.append(raw_path)
+            if not self.args.synclast:
+                self.logrun.log(nonvec_dict)
+            else:
+                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.pickle'
+                save_pickle(dct=nonvec_dict, path=nonvec_path)
         elif self.args.verbose:
             show_log(mean_log, self.round, self.args)
         
         self.round += 1
+    
+    def sync_finish(self):
+        logart = wandb.Artifact(name=f"raw_log", type="log")
+        for raw_path in self.logart:
+            logart.add_file(local_path=raw_path)
+        self.logrun.log_artifact(logart)
+
+        if self.args.synclast:
+            nonvec_file_paths = glob(self.save_dir + "/nonvec_*.pickle")
+
+            for nonvec_path in nonvec_file_paths:
+                nonvec_dict = read_pickle(nonvec_path)
+                self.logrun.log(nonvec_dict)
+        
+        if os.path.exists(self.best_model_path):
+            self.logrun.log_model(path=self.best_model_path, name=f'{self.run_name}-best-model')
+        else:
+            raise Exception(f'best model path is not exist at {self.best_model_path}')
+        
+        if os.path.exists(self.last_model_path):
+            self.logrun.log_model(path=self.last_model_path, name=f'{self.run_name}-last-model')
+        else:
+            raise Exception(f'last model path is not exist at {self.last_model_path}')
+
     
     def run(self):
         not NotImplementedError()

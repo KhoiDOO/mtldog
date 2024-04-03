@@ -17,12 +17,12 @@
     "lr" : 0.001,
     "seed" : 0,
     "tm" : "sup",
-    "dvids" : ["0"],
-    "round" : 1,
-    "chkfreq" : 1,
+    "dvids" : ["1"],
+    "round" : 5,
+    "chkfreq" : 5,
     "port" : 8080,
 
-    "wandb" : false,
+    "wandb" : true,
     "wandb_prj" : "MTLDOG",
     "wandb_entity" : "heartbeats",
     

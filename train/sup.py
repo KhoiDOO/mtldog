@@ -180,6 +180,6 @@ class SUP(MTLDOGTR):
             scheduler.step()
         
         if is_master and args.wandb:
-            self.log_wbmodel()
+            self.sync_finish()
         
         self.finish()
