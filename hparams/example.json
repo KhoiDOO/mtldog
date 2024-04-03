@@ -22,7 +22,7 @@
     "chkfreq" : 1,
     "port" : 8080,
 
-    "wandb" : true,
+    "wandb" : false,
     "wandb_prj" : "MTLDOG",
     "wandb_entity" : "heartbeats",
     

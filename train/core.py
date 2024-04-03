@@ -6,6 +6,7 @@ from .utils import *
 from pandas import DataFrame
 from glob import glob
 from alive_progress import alive_it
+from fastparquet import write
 
 import os, sys, torch, wandb
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
@@ -55,17 +56,9 @@ class MTLDOGTR:
         run_dir = main_dir + '/runs'
         if not os.path.exists(run_dir):
             os.mkdir(run_dir)
-        
-        self.method_dir = run_dir + f'/{self.args.m}'
-        if not os.path.exists(self.method_dir):
-            os.mkdir(self.method_dir)
-        
-        self.ds_dir = self.method_dir + f'/{self.args.ds}'
-        if not os.path.exists(self.ds_dir):
-            os.mkdir(self.ds_dir)
 
         self.args.hashcode = get_hash(args=self.args)
-        self.args.save_dir = self.save_dir = self.ds_dir + f"/{self.args.hashcode}"
+        self.args.save_dir = self.save_dir = run_dir + f"/{self.args.hashcode}"
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         
@@ -140,51 +133,36 @@ class MTLDOGTR:
         self.log = {}
 
         return mean_log
+
+    def postprocess_log(self, log_dict: Dict[str, Tensor | DataFrame| float]):
+
+        for key in log_dict:
+            if 'tab' in key:
+                log_dict[key] = wandb.Table(dataframe=log_dict[key])
+
+        non_vec_dict = {key: value for key, value in log_dict.items() if 'vec' not in key}
+
+        return non_vec_dict, log_dict
+
     
     def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
                 sol_grad_share: Tensor | None = None, 
                 sol_grad_head: Dict[str, Tensor] | None = None, 
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None,
-                mode='realtime'):
-
-        if mode == 'realtime':
-            mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
-
-            for key in mean_log:
-                if 'mat' in key:
-                    mean_log[key] = wandb.Table(dataframe=mean_log[key])
-
-            self.logrun.log(mean_log)
-        elif mode == 'last':
-            print("Syncing")
-            log_files = glob(self.save_dir + "/*.pickle")
-
-            for log_file in alive_it(log_files):
-                log_dict = read_pickle(log_file)
-                self.logrun.log(log_dict)
-        else:
-            raise ValueError(f"mode must be one of ['realtime', 'last'], but found {mode} instead")
-    
-    def buffer(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor],
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]):
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None):
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
+        non_vec_dict, main_log_dict = self.postprocess_log(mean_log)
 
-        for key in mean_log:
-            if 'mat' in key:
-                mean_log[key] = wandb.Table(dataframe=mean_log[key])
-
-        save_pickle(dct=mean_log, path=self.save_dir + f'/log_round_{self.round}.pickle')
-        self.round += 1
-    
-    def logging(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor],
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]) -> None:
+        raw_path = self.save_dir + f'/main_log_round_{self.round}.pickle'
+        save_pickle(dct=main_log_dict, path=raw_path)
         
-        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
-
-        show_log(mean_log, self.round, self.args)
+        if self.args.wandb:
+            self.logrun.log(non_vec_dict)
+            raw_artifact = wandb.Artifact(name=f"raw_{self.round}", type="log")
+            raw_artifact.add_file(local_path=raw_path, skip_cache=True)
+            self.logrun.log_artifact(raw_artifact)
+        elif self.args.verbose:
+            show_log(mean_log, self.round, self.args)
         
         self.round += 1
     
