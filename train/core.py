@@ -57,7 +57,7 @@ class MTLDOGTR:
         if not os.path.exists(run_dir):
             os.mkdir(run_dir)
 
-        self.args.hashcode = get_hash(args=self.args)
+        self.args.hashcode = self.hash = get_hash(args=self.args)
         self.args.save_dir = self.save_dir = run_dir + f"/{self.args.hashcode}"
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
@@ -146,7 +146,7 @@ class MTLDOGTR:
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
         nonvec_dict = self.postprocess_log(mean_log)
 
-        raw_path = self.save_dir + f'/main_log_round_{self.round}.pickle.gz'
+        raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
         save_pickle(dct=mean_log, path=raw_path)
         
         if self.args.wandb:
@@ -154,7 +154,7 @@ class MTLDOGTR:
             if not self.args.synclast:
                 self.logrun.log(nonvec_dict)
             else:
-                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.pickle.gz'
+                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.xz'
                 save_pickle(dct=nonvec_dict, path=nonvec_path)
         elif self.args.verbose:
             show_log(mean_log, self.round, self.args)
@@ -162,7 +162,7 @@ class MTLDOGTR:
         self.round += 1
     
     def sync_finish(self):
-        logart = wandb.Artifact(name=f"raw_log", type="log")
+        logart = wandb.Artifact(name=f"raw_log_{self.hash}", type="log")
         for raw_path in self.logart:
             logart.add_file(local_path=raw_path)
         self.logrun.log_artifact(logart)

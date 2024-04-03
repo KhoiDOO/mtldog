@@ -8,8 +8,7 @@ from numpy.linalg import svd
 
 import pandas as pd
 import numpy as np
-import json, hashlib, gzip
-import torch, wandb, pickle
+import json, hashlib, lzma, torch, pickle
 
 def save_json(dct: Dict, path: str) -> None:
     with open(path, 'w') as outfile:
@@ -19,12 +18,12 @@ def read_json(path: str) -> Dict:
     return json.load(open(path, 'r'))
 
 def save_pickle(dct: Dict, path:str) -> None:
-    with gzip.open(path, 'wb') as  file:
+    with lzma.open(path, 'wb') as  file:
         pickle.dump(obj=dct, file=file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
 
 def read_pickle(path:str) -> Dict:
-    with gzip.open(path, 'rb') as  file:
+    with lzma.open(path, 'rb') as  file:
         dct = pickle.load(file=file)
     file.close()
     return dct
