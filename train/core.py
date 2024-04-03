@@ -6,7 +6,6 @@ from .utils import *
 from pandas import DataFrame
 from glob import glob
 from alive_progress import alive_it
-from fastparquet import write
 
 import os, sys, torch, wandb
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
@@ -135,7 +134,7 @@ class MTLDOGTR:
 
         non_vec_dict = {key: value for key, value in copy_log_dict.items() if 'vec' not in key}
 
-        return non_vec_dict
+        return non_vec_dict, {key: value for key, value in copy_log_dict.items() if 'vec' in key}
 
     
     def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
@@ -144,13 +143,13 @@ class MTLDOGTR:
                 hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None):
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
-        nonvec_dict = self.postprocess_log(mean_log)
+        nonvec_dict, mean_log = self.postprocess_log(mean_log)
 
-        raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
-        save_pickle(dct=mean_log, path=raw_path)
+        # raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
+        # save_pickle(dct=mean_log, path=raw_path)
         
         if self.args.wandb:
-            self.logart.append(raw_path)
+            # self.logart.append(raw_path)
             if not self.args.synclast:
                 self.logrun.log(nonvec_dict)
             else:
@@ -162,15 +161,17 @@ class MTLDOGTR:
         self.round += 1
     
     def sync_finish(self):
-        logart = wandb.Artifact(name=f"raw_log_{self.hash}", type="log")
-        for raw_path in self.logart:
-            logart.add_file(local_path=raw_path)
-        self.logrun.log_artifact(logart)
+        # print("Raw Syncing")
+        # logart = wandb.Artifact(name=f"raw_log_{self.hash}", type="log")
+        # for raw_path in alive_it(self.logart):
+        #     logart.add_file(local_path=raw_path)
+        # self.logrun.log_artifact(logart)
 
         if self.args.synclast:
+            print("Syncing")
             nonvec_file_paths = glob(self.save_dir + "/nonvec_*")
 
-            for nonvec_path in nonvec_file_paths:
+            for nonvec_path in alive_it(nonvec_file_paths):
                 nonvec_dict = read_pickle(nonvec_path)
                 self.logrun.log(nonvec_dict)
         
