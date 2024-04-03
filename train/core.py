@@ -146,7 +146,7 @@ class MTLDOGTR:
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
         nonvec_dict = self.postprocess_log(mean_log)
 
-        raw_path = self.save_dir + f'/main_log_round_{self.round}.pickle'
+        raw_path = self.save_dir + f'/main_log_round_{self.round}.pickle.gz'
         save_pickle(dct=mean_log, path=raw_path)
         
         if self.args.wandb:
@@ -154,7 +154,7 @@ class MTLDOGTR:
             if not self.args.synclast:
                 self.logrun.log(nonvec_dict)
             else:
-                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.pickle'
+                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.pickle.gz'
                 save_pickle(dct=nonvec_dict, path=nonvec_path)
         elif self.args.verbose:
             show_log(mean_log, self.round, self.args)
@@ -168,7 +168,7 @@ class MTLDOGTR:
         self.logrun.log_artifact(logart)
 
         if self.args.synclast:
-            nonvec_file_paths = glob(self.save_dir + "/nonvec_*.pickle")
+            nonvec_file_paths = glob(self.save_dir + "/nonvec_*")
 
             for nonvec_path in nonvec_file_paths:
                 nonvec_dict = read_pickle(nonvec_path)
