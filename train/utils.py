@@ -133,7 +133,7 @@ def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tens
                 share_grad_keys.append(f'{dmtxt}-{tk}')
                 share_grad_vectors.append(share_grad_dict[dmtxt][tkidx])
 
-                main_grad_dict[f'grad-share/{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
+                # main_grad_dict[f'grad-share/{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
                 main_grad_dict[f'grad-share/{dmtxt}-{tk}-norm'] = share_grad_dict[dmtxt][tkidx].norm(p=2).item()
         
         main_grad_dict['grad-share-cos-tab'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
@@ -154,7 +154,7 @@ def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tens
                 head_grad_keys.append(f'{dmtxt}-{tk}')
                 head_grad_vectors.append(head_grad_dict[dmtxt][tk])
             
-                main_grad_dict[f'grad-heads/{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
+                # main_grad_dict[f'grad-heads/{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
                 main_grad_dict[f'grad-heads/{dmtxt}-{tk}-norm'] = head_grad_dict[dmtxt][tk].norm(p=2).item()
 
             main_grad_dict[f'grad-heads-{tk}-cos-tab'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
@@ -190,7 +190,7 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
                 temp_eigen = lw_eigen(hess)
                 grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
             
-            grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
+            # grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
             grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
 
             for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
@@ -199,7 +199,7 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
                 temp_eigen = lw_eigen(hess)
                 grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
             
-            grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
+            # grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
             grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
 
     # layer-wise task-wise cosine matrix
