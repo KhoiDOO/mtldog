@@ -27,7 +27,10 @@ First create a virtual environemnt and install all requirements in ```requiremen
 python3 -m venv .env
 source .env/bin/activate
 python -m pip install -U pip
+cd /path/to/mtldog
 pip install -r requirements.txt
+pip3 install torch torchvision torchaudio
+cd mtldog/
 ```
 Before using, check wether ```GPU``` and ```CUDA``` are available by initializing a python session by ```python```, then
 ```
