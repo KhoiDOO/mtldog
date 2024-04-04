@@ -215,8 +215,21 @@ on 725: +--------+------------+------------+-----------+----------+
         | 10-cls |  0.121551  |  0.724015  | 0.025323  | 1.00009  |
         +--------+------------+------------+-----------+----------+
 ```
+
+if ```--hess``` is toggled, the **layer-wise** ```cosine similarity``` and the ```dot product``` for share and heads gradients accross tasks and domains are then shown. Otherwise the eigen decomposition for hessian matrix is also performed. 
+
 ## Wandb Syncing & Last Syncing
-Using ```--wandb``` to enabe saving your experiment into [WandB](https://wandb.ai/). Consider using ```--synclast``` argument to save right after the whole training procedure is done, in case your internet connection is not good (my case), which will faster your experiment so much.
+Using ```--wandb``` to enabe saving your experiment into [WandB](https://wandb.ai/). Consider using ```--synclast``` argument to save right after the whole training procedure is done, in case your internet connection is not good (my case), which will faster your experiment so much. If ```--quant``` is toggled, all vectors, tables, metrics, losses and model is logged. 
+
+|   Tag   |   grad   |   hess   |    lw grad   |    lw hess   |  eigen  |  lw eigen  | metric and loss | model |
+|:-------:|:--------:|:--------:|:------------:|:------------:|:-------:|:----------:|:---------------:|:-----:|
+|  --grad | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
+|  --hess | <input type="checkbox" disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
+| --quant | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
+
+The above table show the tag needed for logging the corresponding information. For example to log *layer-wise hessian* (lw hess), two tag needed to be toggled are ```--hess``` and ```--quant```, while model, metric and loss are logged as default. 
+
+
 
 # Citation
 If you find this project useful for your research, consider cite it to your research paper.
