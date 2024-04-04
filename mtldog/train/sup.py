@@ -94,8 +94,11 @@ class SUP(MTLDOGTR):
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, train_losses[trdm_txt][tkix].item())
             
-            if is_master and args.grad:
-                grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
+            if is_master:
+                if args.grad:
+                    grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
+                if args.hess:
+                    hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
@@ -103,47 +106,49 @@ class SUP(MTLDOGTR):
 
             if is_master:
                 agent.eval()
-                for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
-                    input, target = trdmb
-                    input: Tensor = input.cuda(gpu)
-                    target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
-                    output: Dict[str, Tensor] = agent(input)
-                    
-                    for tk in args.tkss:
-                        for metric_key in self.metric_dct:
-                            if tk in metric_key:
-                                trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
-                                self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
-            
-            agent.eval()
-            if is_master and not args.diseval and checkpoint:
-                tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
-                train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
-                inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
-                eval_loss_lst = []
-
-                for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
-                    for (input, target) in teld:
-
-                        eval_losses = torch.zeros(len(args.tkss)).cuda(gpu)
-
+                with torch.no_grad():
+                    for trdmb, trdm_txt in zip(trdm_batchs, trdm_txts):
+                        input, target = trdmb
                         input: Tensor = input.cuda(gpu)
                         target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                         output: Dict[str, Tensor] = agent(input)
-
-                        for tkix, tk in enumerate(args.tkss):
-                            for loss_key in self.loss_dct:
-                                if tk in loss_key:
-                                    eval_losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
-                                    tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
-                                    self.track(tedm_loss_key, eval_losses[tkix].item())
-
+                        
+                        for tk in args.tkss:
                             for metric_key in self.metric_dct:
                                 if tk in metric_key:
-                                    tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
-                                    self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
-                        
-                        eval_loss_lst.append(torch.sum(eval_losses).item())
+                                    trdm_metric_key = f"{trdm_txt}/train-in-{tk}-{metric_key.split('_')[-1]}"
+                                    self.track(trdm_metric_key, self.metric_dct[metric_key](output[tk], target[tk]))
+            
+            agent.eval()
+            with torch.no_grad():
+                if is_master and not args.diseval and checkpoint:
+                    tedm_txts = [teld.dataset.domain_txt for teld in te_loaders]
+                    train_txts = ['train' if teld.dataset.tr is True else 'test' for teld in te_loaders]
+                    inout_txts = ['in' if teld.dataset.domain_idx in args.trdms else 'out' for teld in te_loaders]
+                    eval_loss_lst = []
+
+                    for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
+                        for (input, target) in teld:
+
+                            eval_losses = torch.zeros(len(args.tkss)).cuda(gpu)
+
+                            input: Tensor = input.cuda(gpu)
+                            target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
+                            output: Dict[str, Tensor] = agent(input)
+
+                            for tkix, tk in enumerate(args.tkss):
+                                for loss_key in self.loss_dct:
+                                    if tk in loss_key:
+                                        eval_losses[tkix] = self.loss_dct[loss_key](output[tk], target[tk], args)
+                                        tedm_loss_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{loss_key.split('_')[-1]}"
+                                        self.track(tedm_loss_key, eval_losses[tkix].item())
+
+                                for metric_key in self.metric_dct:
+                                    if tk in metric_key:
+                                        tedm_metric_key = f"{tedm_txt}/{train_txt}-{inout_txt}-{tk}-{metric_key.split('_')[-1]}"
+                                        self.track(key=tedm_metric_key, value=self.metric_dct[metric_key](output[tk], target[tk]))
+                            
+                            eval_loss_lst.append(torch.sum(eval_losses).item())
             
             if is_master and checkpoint:
                 save_dict = {
@@ -164,15 +169,7 @@ class SUP(MTLDOGTR):
                 torch.save(save_dict, self.last_model_path)
             
             if is_master:
-                if args.wandb:
-                    if not args.synclast:
-                        if checkpoint:
-                            self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-                    else:
-                        self.buffer(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
-
-                elif args.verbose:
-                    self.logging(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
+                self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict if args.hess else None)
             
             dist.barrier()
             if checkpoint:
@@ -183,9 +180,6 @@ class SUP(MTLDOGTR):
             scheduler.step()
         
         if is_master and args.wandb:
-            self.log_wbmodel()
-
-            if args.synclast:
-                self.sync(mode='last')
+            self.sync_finish()
         
         self.finish()

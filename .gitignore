@@ -160,8 +160,8 @@ cython_debug/
 #.idea/
 
 # extra dir
-wandb/
-runs/
-ds/src/
-conversion/download
-conversion/export
+mtldog/wandb/
+mtldog/runs/
+mtldog/ds/src/
+mtldog/conversion/download
+mtldog/conversion/export

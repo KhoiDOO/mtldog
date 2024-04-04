@@ -42,7 +42,10 @@
         "erm" : null
     },
     "grad" : [true, false],
+    "hess" : [true, false],
+    "spcnt" : 1,
     "diseval" : [true, false],
     "verbose" : [true, false],
-    "synclast" : [true, false]
+    "synclast" : [true, false],
+    "extend_verbose" : [true, false]
 }

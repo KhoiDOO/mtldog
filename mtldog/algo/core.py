@@ -1,19 +1,23 @@
 from typing import Dict, List, Tuple
 from argparse import Namespace
 from torch import nn, Tensor
+from arch import MTLDOGARCH
 
 import json
 import torch
 import numpy as np
 
 class MTLDOGALGO(nn.Module):
-    def __init__(self):
+    def __init__(self) -> MTLDOGARCH:
         super(MTLDOGALGO, self).__init__()
 
     def init_param(self, args: Namespace) -> None:
         self.args: Namespace = args
+        self.spcnt = args.spcnt
         self.tkss: List = args.tkss
+        self.trdms: List = args.trdms
         self.train_loss_buffer = np.zeros([args.task_num, args.round])
+        self.generator = torch.Generator(device=self.device).manual_seed(args.seed)
 
     # Extract ==================================================================================================================
     def compute_grad_dim_share(self) -> None:
@@ -132,10 +136,79 @@ class MTLDOGALGO(nn.Module):
                 'heads' : {head : grad_heads[head].detach().clone().cpu() if detach else grad_heads[head] for head in grad_heads}}
         
         return grad_dict
+    
+    def hess_approx_gauss_newton_barlett(self, grads) -> List[Tensor]:
+        return [x * x for x in grads]
+
+    def hess_approx_hutchinson(self, params, grads) -> List[Tensor]:
+
+        hess = [0] * len(grads)
+
+        for i in range(self.spcnt):
+            zs = [torch.randint(0, 2, p.size(), generator=self.generator, device=p.device) * 2.0 - 1.0 for p in params]  # Rademacher distribution {-1.0, 1.0}
+            h_zs = torch.autograd.grad(grads, params, grad_outputs=zs, only_inputs=True, retain_graph=True)
+            for idx, (h_z, z) in enumerate(zip(h_zs, zs)):
+                hess[idx] += h_z * z / self.spcnt  # approximate the expected values of z*(H@z)
+        
+        return hess
+    
+    def get_grads_hess_dm_share_heads(self, losses: Dict[str, Tensor]):
+
+        hess_dict = {}
+
+        for dm in losses:
+            task_losses = losses[dm]
+
+            task_dict = {tk : None for tk in self.tkss}
+
+            for tkidx, tk in enumerate(self.tkss):
+                task_losses[tkidx].backward(retain_graph=True)
+
+                name_share = self.name_share_params_require_grad()
+                name_heads = self.name_heads_params_require_grad()[tk]
+
+                share_params = self.get_share_params_require_grad()
+                heads_params = self.get_heads_params_require_grad()[tk]
+        
+                temp_share_grad = list(torch.autograd.grad(task_losses[tkidx], self.get_share_params(), retain_graph=True, create_graph=True))
+                temp_heads_grad = list(torch.autograd.grad(task_losses[tkidx], self.get_heads_params()[tk], retain_graph=True, create_graph=True))
+                
+                temp_share_hess = self.hess_approx_hutchinson(share_params, temp_share_grad)
+                temp_heads_hess = self.hess_approx_hutchinson(heads_params, temp_heads_grad)
+
+                temp_share_grad = [g.detach().clone().cpu() for g in temp_share_grad]
+                temp_heads_grad = [g.detach().clone().cpu() for g in temp_heads_grad]
+
+                temp_share_hess = [h.detach().clone().cpu() for h in temp_share_hess]
+                temp_heads_hess = [h.detach().clone().cpu() for h in temp_heads_hess]
+
+                share_grad_hess_dict = {'name':name_share, 'grad':temp_share_grad, 'hess':temp_share_hess}
+                head_grad_hess_dict = {'name':name_heads, 'grad':temp_heads_grad, 'hess':temp_heads_hess}
+
+                task_dict[tk] = {'share':share_grad_hess_dict, 'head':head_grad_hess_dict}
+
+                # self.zero_grad_share_params()
+                # self.zero_grad_heads_params()
+            
+            hess_dict[dm] = task_dict
+        
+        return hess_dict
+
+        """
+        {
+            "dmtxt" : {
+                "tk" {
+                    "share" : {'name' : [Tensor], 'grad' : [Tensor], 'hess' : [Tensor]},
+                    "heads" : {'name' : [Tensor], 'grad' : [Tensor], 'hess' : [Tensor]}
+                }
+            }
+        }
+        """
+
 
     # Extract ==================================================================================================================
 
-    # Update ==================================================================================================================
+    # Update ===================================================================================================================
     def reset_grad_share(self, new_grads: Tensor):
         count = 0
         for param in self.get_share_params():
@@ -168,5 +241,7 @@ class MTLDOGALGO(nn.Module):
         }
         """
 
+        
         raise NotImplementedError()
-    # Update ==================================================================================================================
+        
+    # Update ===================================================================================================================
