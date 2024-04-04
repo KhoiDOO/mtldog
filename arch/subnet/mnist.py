@@ -74,6 +74,44 @@ class MNIST_HPS_REC_AE_BASE_DECODER(nn.Module):
         return self.net(x)
 
 
+class MNIST_HPS_AE_BASEWONORM_ENCODER(nn.Module):
+    def __init__(self, args:Namespace) -> nn.Module:
+        super(MNIST_HPS_AE_BASE_ENCODER, self).__init__()
+
+        self.net = torch.nn.Sequential(
+            nn.Conv2d(1, 64, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, 3, stride=1, padding=1),
+            nn.ReLU()
+        )
+
+    def forward(self, x: Tensor):
+        return self.net(x)
+    
+
+class MNIST_HPS_REC_AE_BASEWONORM_DECODER(nn.Module):
+    def __init__(self, args:Namespace) -> nn.Module:
+        super(MNIST_HPS_REC_AE_BASE_DECODER, self).__init__()
+
+        self.net = nn.Sequential(
+            nn.ConvTranspose2d(128, 128, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 128, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 64, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 1, 3, stride=1, padding=1),
+            nn.ReLU(),
+        )
+    
+    def forward(self, x: Tensor) -> Tensor:
+        return self.net(x)
+
+# with norm
 def arch_mnist_hps_ae_base_encoder(args: Namespace) -> nn.Module:
     return MNIST_HPS_AE_BASE_ENCODER(args)
 
@@ -100,3 +138,31 @@ def arch_mnisteasy_hps_cls_ae_base_decoder(args: Namespace) -> nn.Module:
 
 def arch_mnisteasy_hps_rec_ae_base_decoder(args: Namespace) -> nn.Module:
     return MNIST_HPS_REC_AE_BASE_DECODER(args)
+
+# w/o norm
+def arch_mnist_hps_ae_basewonorm_encoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_AE_BASEWONORM_ENCODER(args)
+
+def arch_mnist_hps_cls_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_CLS_AE_BASE_DECODER(args)
+
+def arch_mnist_hps_rec_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_REC_AE_BASEWONORM_DECODER(args)
+
+def arch_mnistmed_hps_ae_basewonorm_encoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_AE_BASEWONORM_ENCODER(args)
+
+def arch_mnistmed_hps_cls_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_CLS_AE_BASE_DECODER(args)
+
+def arch_mnistmed_hps_rec_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_REC_AE_BASEWONORM_DECODER(args)
+
+def arch_mnisteasy_hps_ae_basewonorm_encoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_AE_BASEWONORM_ENCODER(args)
+
+def arch_mnisteasy_hps_cls_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_CLS_AE_BASE_DECODER(args)
+
+def arch_mnisteasy_hps_rec_ae_basewonorm_decoder(args: Namespace) -> nn.Module:
+    return MNIST_HPS_REC_AE_BASEWONORM_DECODER(args)
