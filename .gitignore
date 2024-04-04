@@ -163,5 +163,5 @@ cython_debug/
 mtldog/wandb/
 mtldog/runs/
 mtldog/ds/src/
-mtldog/conversion/download
-mtldog/conversion/export
+conversion/download
+conversion/export
