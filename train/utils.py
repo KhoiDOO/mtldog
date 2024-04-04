@@ -17,19 +17,29 @@ def save_json(dct: Dict, path: str) -> None:
 def read_json(path: str) -> Dict:
     return json.load(open(path, 'r'))
 
-def save_pickle(dct: Dict, path:str) -> None:
+def save_pickle_xz(dct: Dict, path:str) -> None:
     gc.disable()
     with lzma.open(path, 'wb') as  file:
         pickle.dump(obj=dct, file=file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
     gc.enable()
 
-def read_pickle(path:str) -> Dict:
+def read_pickle_xz(path:str) -> Dict:
     gc.disable()
     with lzma.open(path, 'rb') as  file:
         dct = pickle.load(file=file)
     file.close()
     gc.enable()
+    return dct
+
+def save_pickle(dct: Dict, path:str) -> None:
+    with open(path, 'wb') as  file:
+        pickle.dump(obj=dct, file=file, protocol=pickle.HIGHEST_PROTOCOL)
+    
+def read_pickle(path:str) -> None:
+    with open(path, 'rb') as  file:
+        dct = pickle.load(file=file)
+    file.close()
     return dct
 
 def get_hash(args: Namespace) -> str:
@@ -187,23 +197,23 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
             share_dict = tk_dict["share"]
             head_dict = tk_dict["head"]
 
-            for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
+            if args.quant:
+                for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
+                    
+                    grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad
+                    grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess
+                    temp_eigen = lw_eigen(hess)
+                    grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
                 
-                grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad
-                grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess
-                temp_eigen = lw_eigen(hess)
-                grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
-            
-            # grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
-            grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+                
 
-            for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
-                grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad
-                grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
-                temp_eigen = lw_eigen(hess)
-                grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
+                for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
+                    grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad
+                    grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
+                    temp_eigen = lw_eigen(hess)
+                    grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
             
-            # grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-vec"] = hess_eigen(share_dict['hess'])
+            grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
             grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
 
     # layer-wise task-wise cosine matrix

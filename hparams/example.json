@@ -28,9 +28,10 @@
     
     "grad" : true,
     "hess" : true,
+    "quant" : false,
     "spcnt" : 1,
     "diseval" : false,
     "verbose" : true,
     "extend_verbose" : true,
-    "synclast" : false
+    "synclast" : true
 }

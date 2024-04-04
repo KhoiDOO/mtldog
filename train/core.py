@@ -145,15 +145,17 @@ class MTLDOGTR:
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
         nonvec_dict, mean_log = self.postprocess_log(mean_log)
 
-        # raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
-        # save_pickle(dct=mean_log, path=raw_path)
+        if self.args.quant:
+            raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
+            save_pickle_xz(dct=mean_log, path=raw_path)
         
         if self.args.wandb:
-            # self.logart.append(raw_path)
+            if self.args.quant:
+                self.logart.append(raw_path)
             if not self.args.synclast:
                 self.logrun.log(nonvec_dict)
             else:
-                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.xz'
+                nonvec_path = self.save_dir + f'/nonvec_log_round_{self.round}.pickle'
                 save_pickle(dct=nonvec_dict, path=nonvec_path)
         elif self.args.verbose:
             show_log(mean_log, self.round, self.args)
@@ -161,11 +163,16 @@ class MTLDOGTR:
         self.round += 1
     
     def sync_finish(self):
-        # print("Raw Syncing")
-        # logart = wandb.Artifact(name=f"raw_log_{self.hash}", type="log")
-        # for raw_path in alive_it(self.logart):
-        #     logart.add_file(local_path=raw_path)
-        # self.logrun.log_artifact(logart)
+        if self.args.quant:
+            print("Raw Syncing")
+            logart = wandb.Artifact(name=f"raw_log_{self.hash}", type="log")
+            for raw_path in alive_it(self.logart):
+                logart.add_file(local_path=raw_path)
+            self.logrun.log_artifact(logart)
+
+            print("Raw Cache Releasing")
+            for raw_path in alive_it(self.logart):
+                os.remove(raw_path)
 
         if self.args.synclast:
             print("Syncing")
@@ -174,6 +181,10 @@ class MTLDOGTR:
             for nonvec_path in alive_it(nonvec_file_paths):
                 nonvec_dict = read_pickle(nonvec_path)
                 self.logrun.log(nonvec_dict)
+            
+            print("Cache Releasing")
+            for nonvec_path in alive_it(nonvec_file_paths):
+                os.remove(nonvec_path)
         
         if os.path.exists(self.best_model_path):
             self.logrun.log_model(path=self.best_model_path, name=f'{self.run_name}-best-model')
