@@ -76,7 +76,7 @@ class MNIST_HPS_REC_AE_BASE_DECODER(nn.Module):
 
 class MNIST_HPS_AE_BASEWONORM_ENCODER(nn.Module):
     def __init__(self, args:Namespace) -> nn.Module:
-        super(MNIST_HPS_AE_BASE_ENCODER, self).__init__()
+        super(MNIST_HPS_AE_BASEWONORM_ENCODER, self).__init__()
 
         self.net = torch.nn.Sequential(
             nn.Conv2d(1, 64, 3, stride=1, padding=1),
@@ -95,7 +95,7 @@ class MNIST_HPS_AE_BASEWONORM_ENCODER(nn.Module):
 
 class MNIST_HPS_REC_AE_BASEWONORM_DECODER(nn.Module):
     def __init__(self, args:Namespace) -> nn.Module:
-        super(MNIST_HPS_REC_AE_BASE_DECODER, self).__init__()
+        super(MNIST_HPS_REC_AE_BASEWONORM_DECODER, self).__init__()
 
         self.net = nn.Sequential(
             nn.ConvTranspose2d(128, 128, 3, stride=1, padding=1),
