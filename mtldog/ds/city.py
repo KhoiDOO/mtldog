@@ -97,10 +97,10 @@ class CityScapes(MTLDOGDS):
             
             if domain == 0:
                 if len(self.img_paths) != len(self.seg_gts):
-                    raise ValueError(f'data loss, #img: {len(self.img_paths)}, while #seg ground truth: {len(self.seg_gts)}')
-            else:
+                    raise ValueError(f'data loss for task seg in domain {domain}, #img: {len(self.img_paths)}, while #seg ground truth: {len(self.seg_gts)}')
+            elif domain == 1:
                 if len(data_name) != len(self.seg_gts):
-                    raise ValueError(f'data loss, #img_names: {len(data_name)}, while #seg ground truth: {len(self.seg_gts)}')
+                    raise ValueError(f'data loss for task seg in domain {domain}, #img: {len(data_name)}, while #seg ground truth: {len(self.seg_gts)}')
         
         if 'depth' in self.tks:
             if domain == 2:
@@ -112,10 +112,10 @@ class CityScapes(MTLDOGDS):
 
             if domain == 0:
                 if len(self.img_paths) != len(self.dep_gts):
-                    raise ValueError(f'data loss, #img: {len(self.img_paths)}, while #depth ground truth: {len(self.seg_gts)}')
+                    raise ValueError(f'data loss for task depth in domain {domain}, #img: {len(self.img_paths)}, while #depth ground truth: {len(self.seg_gts)}')
             elif domain == 1:
                 if len(data_name) != len(self.seg_gts):
-                    raise ValueError(f'data loss, #img_names: {len(data_name)}, while #seg ground truth: {len(self.seg_gts)}')
+                    raise ValueError(f'data loss for task depth in domain {domain}, #img: {len(data_name)}, while #seg ground truth: {len(self.seg_gts)}')
     
     def __len__(self):
         return len(self.img_paths)
@@ -140,7 +140,7 @@ class CityScapes(MTLDOGDS):
                 seg_path = self.seg_dir + f"/{city_name}/{img_name}_gtFine_labelIds.png"
                 tsk_dct[tk] = self.seg_transform(Image.open(seg_path))
             elif tk == 'depth':
-                if self.dm != 'rainy':
+                if self.dm != 2:
                     depth_path = self.dep_dir + f"/{city_name}/{img_name}_disparity.png"
                 else:
                     depth_path = self.dep_dir + f"/{city_name}/{img_name}_depth_rain.png"
