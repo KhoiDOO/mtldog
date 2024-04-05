@@ -163,6 +163,6 @@ cython_debug/
 mtldog/wandb/
 mtldog/runs/
 mtldog/ds/src/
-mtldog/ds/script/
+mtldog/script/
 conversion/download
 conversion/export
