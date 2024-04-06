@@ -22,7 +22,7 @@ class SINSUP(MTLDOGTR):
     def run(self):
         gpu = self.args.dvids[0]
         if len(self.args.dvids) > 1:
-            warnings.warn(f"You are choosing the single gpu training mode, only the first gpu is chosen: {gpu}")
+            warnings.warn("You are choosing the single gpu training mode, only the first gpu is chosen: {}".format(gpu))
 
         device = torch.device("cuda", index=int(gpu))
         self.train(device, self.args)
