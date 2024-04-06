@@ -12,7 +12,7 @@ from torchvision.datasets import MNIST as mnist
 from torchvision.transforms.functional import rotate
 
 DOMAIN_TXT: List[str] = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
-DOMAIN_IDX: List[int] = [ 0,   10,   20,   30,   40,   50 ,  60,   70,   80,   90 ]
+DOMAIN_IDX: List[int] = [ 0,   1,   2,   3,   4,   5 ,  6,   7,   8,   9]
 TASK_TXT: List[str] = ['rec', 'cls']
 
 
@@ -52,7 +52,7 @@ class MNIST(MTLDOGDS):
         )
     
     def rotate_img(self, x) -> Tensor:
-        return rotate(x, self.dm, fill=(0,), interpolation=torchvision.transforms.InterpolationMode.BILINEAR)
+        return rotate(x, int(DOMAIN_TXT[self.dm]), fill=(0,), interpolation=torchvision.transforms.InterpolationMode.BILINEAR)
     
     def __len__(self) -> int:
         return len(self.data)

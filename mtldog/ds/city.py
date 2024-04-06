@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import numpy as np
 import torch
 import cv2
+import warnings
 
 DOMAIN_TXT: List[str] = ['normal', 'foggy', 'rainy']
 DOMAIN_IDX: List[int] = [ 0,   1,   2]
@@ -194,7 +195,7 @@ def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 def check_args(args: Namespace, expect_domain:int):
 
     def UW(args: Namespace, expect_domain:int):
-        raise UserWarning(f"You are choosing a dataset with specific domain: {args.ds}, but the train domains are {args.trdms}, \
+        raise warnings.warn(f"You are choosing a dataset with specific domain: {args.ds}, but the train domains are {args.trdms}, \
                           thus automatically adjusting the args.trdms to [{expect_domain}]")
     
     if len(args.trdms) > 1 or args.trdms[0] != expect_domain:
@@ -227,26 +228,3 @@ def ds_cityrainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     args.seg_num_classes = 20
 
     return args, [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=False)]
-
-
-"""CHECK
-from ds import CityScapes
-
-ROOT = "/media/mountHDD3/data_storage/cityscapes/unzip"
-
-tr_norm_ds = CityScapes(root_dir=ROOT, domain=0, tasks = ['seg', 'depth'], train=True)
-tr_fogg_ds = CityScapes(root_dir=ROOT, domain=1, tasks = ['seg', 'depth'], train=True)
-tr_rain_ds = CityScapes(root_dir=ROOT, domain=2, tasks = ['seg', 'depth'], train=True)
-
-te_norm_ds = CityScapes(root_dir=ROOT, domain=0, tasks = ['seg', 'depth'], train=False)
-te_fogg_ds = CityScapes(root_dir=ROOT, domain=1, tasks = ['seg', 'depth'], train=False)
-te_rain_ds = CityScapes(root_dir=ROOT, domain=2, tasks = ['seg', 'depth'], train=False)
-
-print(len(tr_norm_ds))
-print(len(tr_fogg_ds))
-print(len(tr_rain_ds))
-
-print(len(te_norm_ds))
-print(len(te_fogg_ds))
-print(len(te_rain_ds))
-"""
