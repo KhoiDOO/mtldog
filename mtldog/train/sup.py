@@ -45,7 +45,7 @@ class SUP(MTLDOGTR):
             trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
             tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm)
 
-            if idx in self.args.trdms:
+            if trds.dm in self.args.trdms:
                 tr_loaders.append(trl)
                 te_loaders.append(tel)
             else:
