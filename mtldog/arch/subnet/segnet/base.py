@@ -18,8 +18,6 @@ class SegNetEncoder(nn.Module):
             self.sub_modules.append(DownConv2(lower, higher, kernel_size=3))
         
         self.sub_modules = nn.ModuleList(self.sub_modules)
-
-        print(self.sub_modules)
     
     def forward(self, x: Tensor) -> Tuple[Tensor]:
         mp_indices = []
@@ -49,7 +47,6 @@ class SegNetDecoder(nn.Module):
             self.sub_modules.append(UpConv3(higher, lower, kernel_size=3))
         
         self.sub_modules = nn.ModuleList(self.sub_modules)
-        print(self.sub_modules)
     
     def forward(self, input: Tensor) -> Tuple[Tensor]:
 
