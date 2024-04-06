@@ -17,15 +17,8 @@ class _InfiniteSampler(Sampler):
 
 
 class InfiniteDataLoaderCore:
-    def __init__(self, dataset: Dataset, weights: Tensor, batch_size: int, num_workers: int, pin_memory: bool, generator: Generator):
-        if weights is not None:
-            self.sampler = WeightedRandomSampler(weights, replacement=True, num_samples=batch_size, generator=generator)
-        else:
-            self.sampler = RandomSampler(dataset, replacement=True, generator=generator)
-
-        if weights == None:
-            weights = torch.ones(len(dataset))
-
+    def __init__(self, dataset: Dataset, batch_size: int, num_workers: int, pin_memory: bool, generator: Generator):
+        self.sampler = RandomSampler(dataset, replacement=True, generator=generator)
         self.batch_sampler = BatchSampler(self.sampler, batch_size=batch_size, drop_last=True)
 
     def __iter__(self):
@@ -51,7 +44,7 @@ class InfiniteDataLoader(InfiniteDataLoaderCore):
         return super().__len__()
 
 
-class _RepeatSampler:
+class RepeatSampler:
     def __init__(self, sampler):
         self.sampler = sampler
 
@@ -63,7 +56,7 @@ class _RepeatSampler:
 class DistributedInfiniteDataLoader(DataLoader):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        object.__setattr__(self, "batch_sampler", _RepeatSampler(self.batch_sampler))
+        object.__setattr__(self, "batch_sampler", RepeatSampler(self.batch_sampler))
         self.iterator = super().__iter__()
 
     def __len__(self):

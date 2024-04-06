@@ -5,7 +5,7 @@ from torch import Tensor
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 from ds import DistributedInfiniteDataLoader, SmartDistributedSampler
 from alive_progress import alive_it
 from statistics import mean
@@ -39,7 +39,7 @@ class SUP(MTLDOGTR):
         tr_loaders = []
         te_loaders = []
         for idx, (trds, teds) in enumerate(zip(self.tr_dss, self.te_dss)):
-            tr_sampler = SmartDistributedSampler(trds)
+            tr_sampler = DistributedSampler(trds, shuffle=True)
             per_device_bs = args.bs // args.world_size
 
             trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
@@ -75,7 +75,7 @@ class SUP(MTLDOGTR):
             trdm_batchs = next(zip(*tr_loaders))
             agent.train()
             for trld in tr_loaders:
-                trld.sampler.set_round(round)
+                trld.sampler.set_epoch(round)
             
             train_losses = {dmtxt : torch.zeros(len(args.tkss)).cuda(gpu) for dmtxt in trdm_txts}
             
