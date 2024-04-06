@@ -143,11 +143,11 @@ class MTLDOGTR:
                 hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None):
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
-        nonvec_dict, mean_log = self.postprocess_log(mean_log)
+        nonvec_dict, vec_log = self.postprocess_log(mean_log)
 
         if self.args.quant:
             raw_path = self.save_dir + f'/main_log_round_{self.round}.xz'
-            save_pickle_xz(dct=mean_log, path=raw_path)
+            save_pickle_xz(dct=vec_log, path=raw_path)
         
         if self.args.wandb:
             if self.args.quant:

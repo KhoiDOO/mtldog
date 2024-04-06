@@ -25,6 +25,9 @@ if __name__ == "__main__":
     if args.tm == 'sup':
         from train import SUP
         trainer = SUP(args=args)
+    elif args.tm == 'sinsup':
+        from train import SINSUP
+        trainer = SINSUP(args=args)
     else:
         raise ValueError(f"training mode {args.tm} is not available")
 
