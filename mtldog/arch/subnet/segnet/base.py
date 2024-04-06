@@ -4,42 +4,58 @@ from torch import nn, Tensor
 from argparse import Namespace
 
 class SegNetEncoder(nn.Module):
-    def __init__(self, init_ch: int) -> nn.Module:
+    def __init__(self, init_ch: int, depth: int = 4) -> nn.Module:
         super(SegNetEncoder, self).__init__()
 
         self.init_ch = init_ch
+        self.depth = depth
 
-        self.downconv0 = DownConv2(3, self.init_ch, kernel_size=3)
-        self.downconv1 = DownConv2(self.init_ch, self.init_ch*2, kernel_size=3)
-        self.downconv2 = DownConv3(self.init_ch*2, self.init_ch*4, kernel_size=3)
-        self.downconv3 = DownConv3(self.init_ch*4, self.init_ch*8, kernel_size=3)
+        self.sub_modules = []
+
+        for dep in range(-1, depth - 1):
+            lower = int(self.init_ch*(2**dep) if dep != -1 else 3)
+            higher = int(self.init_ch*(2**(dep + 1)))
+            self.sub_modules.append(DownConv2(lower, higher, kernel_size=3))
+        
+        self.sub_modules = nn.ModuleList(self.sub_modules)
+
+        print(self.sub_modules)
     
     def forward(self, x: Tensor) -> Tuple[Tensor]:
-        x, mp0_indices, shape0 = self.downconv0(x)
-        x, mp1_indices, shape1 = self.downconv1(x)
-        x, mp2_indices, shape2 = self.downconv2(x)
-        x, mp3_indices, shape3 = self.downconv3(x)
+        mp_indices = []
+        shapes = []
 
-        return x, (mp0_indices, mp1_indices, mp2_indices, mp3_indices), (shape0, shape1, shape2, shape3)
+        for i, l in enumerate(self.sub_modules):
+            x, mp_index, shape = l(x)
+            mp_indices.append(mp_index)
+            shapes.append(shape)
+        
+        return x, mp_indices, shapes
+
 
 class SegNetDecoder(nn.Module):
-    def __init__(self, init_ch, seg_num_classes) -> None:
+    def __init__(self, init_ch: int, depth: int, seg_num_classes: int) -> None:
         super(SegNetDecoder, self).__init__()
 
         self.seg_num_class = seg_num_classes
         self.init_ch = init_ch
+        self.depth = depth
 
-        self.upconv0 = UpConv3(self.init_ch*8, self.init_ch*4, kernel_size=3)
-        self.upconv1 = UpConv3(self.init_ch*4, self.init_ch*2, kernel_size=3)
-        self.upconv2 = UpConv2(self.init_ch*2, self.init_ch, kernel_size=3)
-        self.upconv3 = UpConv2(self.init_ch, self.seg_num_class, kernel_size=3)
+        self.sub_modules = []
+
+        for dep in reversed(range(-1, depth - 1)):
+            higher = int(self.init_ch*(2**(dep + 1)))
+            lower = int(self.seg_num_class if dep == -1 else self.init_ch*(2**dep))
+            self.sub_modules.append(UpConv3(higher, lower, kernel_size=3))
+        
+        self.sub_modules = nn.ModuleList(self.sub_modules)
+        print(self.sub_modules)
     
     def forward(self, input: Tensor) -> Tuple[Tensor]:
-        x, (mp0_indices, mp1_indices, mp2_indices, mp3_indices), (shape0, shape1, shape2, shape3) = input
 
-        x = self.upconv0(x, mp3_indices, output_size=shape3)
-        x = self.upconv1(x, mp2_indices, output_size=shape2)
-        x = self.upconv2(x, mp1_indices, output_size=shape1)
-        masks = self.upconv3(x, mp0_indices, output_size=shape0)
+        x, mp_indices, shapes = input
 
-        return masks
+        for i, (l, m, s) in enumerate(zip(self.sub_modules, reversed(mp_indices), reversed(shapes))):
+            x = l(x, m, s)
+
+        return x
