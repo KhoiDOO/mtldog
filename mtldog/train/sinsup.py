@@ -57,7 +57,6 @@ class SINSUP(MTLDOGTR):
         
         bar = alive_it(range(args.round), length = 80)
         trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
-        # old_eval_loss = 1e26
 
         for round in bar:
             checkpoint = (round + 1) % args.chkfreq == 0
