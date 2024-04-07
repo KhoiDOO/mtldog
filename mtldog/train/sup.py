@@ -162,6 +162,7 @@ class SUP(MTLDOGTR):
                     mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
             
                 if mean_loss < old_eval_loss:
+                    old_eval_loss = mean_loss
                     torch.save(save_dict, self.best_model_path)
                     remap = True
                 else:

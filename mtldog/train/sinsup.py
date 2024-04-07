@@ -147,6 +147,7 @@ class SINSUP(MTLDOGTR):
             
                 if mean_loss < old_eval_loss:
                     torch.save(save_dict, self.best_model_path)
+                    old_eval_loss = mean_loss
                 torch.save(save_dict, self.last_model_path)
             
             self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict if args.hess else None)
