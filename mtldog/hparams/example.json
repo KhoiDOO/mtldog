@@ -12,15 +12,18 @@
     "m" : "erm",
     "model" : "hps",
     "at" : "ae",
-    "bb" : "basewonorm",
+    "bb" : "base",
     
     "lr" : 0.001,
     "seed" : 0,
-    "tm" : "sup",
+    "tm" : "sinsup",
     "dvids" : ["1"],
     "round" : 5000,
     "chkfreq" : 100,
     "port" : 8080,
+
+    "emhigh" : true,
+    "emcp" : "miou",
 
     "wandb" : true,
     "wandb_prj" : "MTLDOG",
@@ -33,5 +36,5 @@
     "diseval" : false,
     "verbose" : false,
     "extend_verbose" : false,
-    "synclast" : false
+    "synclast" : true
 }
