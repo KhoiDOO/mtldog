@@ -226,9 +226,9 @@ Using ```--wandb``` to enabe saving your experiment into [WandB](https://wandb.a
 
 |   Tag   |   grad   |   hess   |    lw grad   |    lw hess   |  eigen  |  lw eigen  | metric and loss | model |
 |:-------:|:--------:|:--------:|:------------:|:------------:|:-------:|:----------:|:---------------:|:-----:|
-|  --grad | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
-|  --hess | <input type="checkbox" disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
-| --quant | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" checked disabled/> | <input type="checkbox" disabled/> | <input type="checkbox" disabled/> |
+|  --grad | x |  |  |  |  |  |  |  |
+|  --hess |  | x | x | x | x | x |  |  |
+| --quant | x | x | x | x | x | x |  |  |
 
 The above table show the tag needed for logging the corresponding information. For example to log *layer-wise hessian* (lw hess), two tag needed to be toggled are ```--hess``` and ```--quant```, while model, metric and loss are logged as default. 
 
