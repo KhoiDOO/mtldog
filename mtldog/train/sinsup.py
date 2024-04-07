@@ -33,13 +33,14 @@ class SINSUP(MTLDOGTR):
 
         for idx, (trds, teds) in enumerate(zip(self.tr_dss, self.te_dss)):
 
-            trl = InfiniteDataLoader(dataset=trds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
-            tel = DataLoader(dataset=teds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
-
             if trds.domain_idx in self.args.trdms:
+                trl = InfiniteDataLoader(dataset=trds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
+                tel = DataLoader(dataset=teds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
                 tr_loaders.append(trl)
                 te_loaders.append(tel)
             else:
+                trl = DataLoader(dataset=trds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
+                tel = DataLoader(dataset=teds, batch_size=args.bs, num_workers=self.args.wk, pin_memory=self.args.pm)
                 te_loaders.append(trl)
                 te_loaders.append(tel)
         
@@ -112,11 +113,13 @@ class SINSUP(MTLDOGTR):
                     eval_loss_lst = []
 
                     for teld, tedm_txt, train_txt, inout_txt in zip(te_loaders, tedm_txts, train_txts, inout_txts):
+                        print('looping')
                         for (input, target) in teld:
 
                             eval_losses = torch.zeros(len(args.tkss)).cuda(gpu)
 
                             input: Tensor = input.cuda(gpu)
+                            print(input.shape)
                             target: Dict[str, Tensor] = {tk: target[tk].cuda(gpu) for tk in target}
                             output: Dict[str, Tensor] = agent(input)
 

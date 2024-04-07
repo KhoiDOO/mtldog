@@ -42,13 +42,14 @@ class SUP(MTLDOGTR):
             tr_sampler = DistributedSampler(trds, shuffle=True)
             per_device_bs = args.bs // args.world_size
 
-            trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
-            tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm)
-
             if trds.domain_idx in self.args.trdms:
+                trl = DistributedInfiniteDataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
+                tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm)
                 tr_loaders.append(trl)
                 te_loaders.append(tel)
             else:
+                trl = DataLoader(dataset=trds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm, sampler=tr_sampler)
+                tel = DataLoader(dataset=teds, batch_size=per_device_bs, num_workers=self.args.wk, pin_memory=self.args.pm)
                 te_loaders.append(trl)
                 te_loaders.append(tel)
 
