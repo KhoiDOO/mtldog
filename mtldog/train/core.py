@@ -6,6 +6,7 @@ from .utils import *
 from pandas import DataFrame
 from glob import glob
 from alive_progress import alive_it
+from collections import OrderedDict
 
 import os, sys, torch, wandb
 sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
@@ -21,8 +22,7 @@ class MTLDOGTR:
         self.prepare_ds()
         self.prepare_save_dir()
         self.prepare_algo()
-        self.log = {}
-        self.round = 0
+        self.prepare_log()
         if self.args.wandb:
             self.prepare_wandb()
         self.prepare_loss()
@@ -72,6 +72,11 @@ class MTLDOGTR:
         model_map = vars(arch)
         self.model_dct = {k : model_map[k] for  k in model_map if 'model' in k}
         self.model = self.model_dct[f'model_{self.args.model}']()
+    
+    def prepare_log(self):
+        self.log = {}
+        self.round = 0
+        self.old_eval_metric = 0 if self.args.mehigh else 1e26
 
     def prepare_wandb(self):
         self.args.run_name = self.run_name = f'{self.args.hashcode}'
@@ -140,7 +145,9 @@ class MTLDOGTR:
     def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
                 sol_grad_share: Tensor | None = None, 
                 sol_grad_head: Dict[str, Tensor] | None = None, 
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None):
+                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None,
+                state_dict: OrderedDict | None = None,
+                checkpoint: bool | None = None):
         
         mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
         nonvec_dict, vec_log = self.postprocess_log(mean_log)
@@ -160,7 +167,30 @@ class MTLDOGTR:
         elif self.args.verbose:
             show_log(mean_log, self.round, self.args)
         
+        remap = False
+        if checkpoint:
+            save_dict = {
+                'args' : self.args,
+                'model_state_dict': state_dict
+            }
+            
+            if not self.args.diseval:
+                mean_metric_dict = {key:value for key, value in mean_log.items() if self.args.mecp in key and 'test' in key}
+            else:
+                mean_metric_dict = {key:value for key, value in mean_log.items() if self.args.mecp in key}
+            
+            mean_metric = mean(mean_metric_dict.values())
+            mecheck = mean_metric >= self.old_eval_metric if self.args.mehigh else mean_metric <= self.old_eval_metric
+            if mecheck:
+                torch.save(save_dict, self.best_model_path)
+                self.old_eval_metric = mean_metric
+                remap = True
+            torch.save(save_dict, self.last_model_path)
+        
         self.round += 1
+
+        return True if remap else False
+        
     
     def sync_finish(self):
         if self.args.quant:

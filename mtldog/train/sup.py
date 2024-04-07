@@ -150,27 +150,31 @@ class SUP(MTLDOGTR):
                             
                             eval_loss_lst.append(torch.sum(eval_losses).item())
             
-            if is_master and checkpoint:
-                save_dict = {
-                    'args' : args,
-                    'model_state_dict': agent.module.state_dict()
-                }
+            # if is_master and checkpoint:
+            #     save_dict = {
+            #         'args' : args,
+            #         'model_state_dict': agent.module.state_dict()
+            #     }
                 
-                if not args.diseval:
-                    mean_loss = mean(eval_loss_lst)
-                else:
-                    mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
+            #     if not args.diseval:
+            #         mean_loss = mean(eval_loss_lst)
+            #     else:
+            #         mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
             
-                if mean_loss < old_eval_loss:
-                    old_eval_loss = mean_loss
-                    torch.save(save_dict, self.best_model_path)
-                    remap = True
-                else:
-                    remap = False
-                torch.save(save_dict, self.last_model_path)
+            #     if mean_loss < old_eval_loss:
+            #         old_eval_loss = mean_loss
+            #         torch.save(save_dict, self.best_model_path)
+            #         remap = True
+            #     else:
+            #         remap = False
+            #     torch.save(save_dict, self.last_model_path)
             
             if is_master:
-                self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict if args.hess else None)
+                remap = self.sync(grad_dict=grad_dict if args.grad else None, 
+                          sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, 
+                          hess_dict=hess_dict if args.hess else None,
+                          checkpoint=checkpoint,
+                          state_dict=agent.module.state_dict())
             
             dist.barrier()
             if checkpoint:

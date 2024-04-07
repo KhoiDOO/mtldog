@@ -56,7 +56,7 @@ class SINSUP(MTLDOGTR):
         
         bar = alive_it(range(args.round), length = 80)
         trdm_txts = [trld.dataset.domain_txt for trld in tr_loaders]
-        old_eval_loss = 1e26
+        # old_eval_loss = 1e26
 
         for round in bar:
             checkpoint = (round + 1) % args.chkfreq == 0
@@ -134,23 +134,27 @@ class SINSUP(MTLDOGTR):
                             
                             eval_loss_lst.append(torch.sum(eval_losses).item())
             
-            if checkpoint:
-                save_dict = {
-                    'args' : args,
-                    'model_state_dict': agent.state_dict()
-                }
+            # if checkpoint:
+            #     save_dict = {
+            #         'args' : args,
+            #         'model_state_dict': agent.state_dict()
+            #     }
                 
-                if not args.diseval:
-                    mean_loss = mean(eval_loss_lst)
-                else:
-                    mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
+            #     if not args.diseval:
+            #         mean_loss = mean(eval_loss_lst)
+            #     else:
+            #         mean_loss = mean([torch.sum(item).item() for _, item in train_losses.items()])
             
-                if mean_loss < old_eval_loss:
-                    torch.save(save_dict, self.best_model_path)
-                    old_eval_loss = mean_loss
-                torch.save(save_dict, self.last_model_path)
+            #     if mean_loss < old_eval_loss:
+            #         torch.save(save_dict, self.best_model_path)
+            #         old_eval_loss = mean_loss
+            #     torch.save(save_dict, self.last_model_path)
             
-            self.sync(grad_dict=grad_dict if args.grad else None, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict if args.hess else None)
+            self.sync(grad_dict=grad_dict if args.grad else None, 
+                      sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, 
+                      hess_dict=hess_dict if args.hess else None,
+                      checkpoint=checkpoint,
+                      state_dict=agent.state_dict())
 
             scheduler.step()
         
