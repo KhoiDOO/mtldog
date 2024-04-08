@@ -1,2 +1,2 @@
-export TMPDIR=./.cache
-export WANDB_CACHE_DIR=./.cache/wandb
+mkdir ./mtldog/.cache
+mkdir ./mtldog/.cache/wandb
