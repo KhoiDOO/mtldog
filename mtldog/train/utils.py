@@ -184,12 +184,15 @@ def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tens
     
     return main_grad_dict
 
-def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]], args: Namespace) -> Dict[str, Tensor | DataFrame| float]:
+def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None, 
+                             args: Namespace | None = None) -> Dict[str, Tensor | DataFrame| float]:
+
+    assert args is None
     
-    grad_hess_dict = {}
+    log_dict = {}
 
     if hess_dict is None:
-        return grad_hess_dict
+        return log_dict
 
     # add tensor
     for dm, dm_dict in hess_dict.items():
@@ -200,72 +203,77 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
             if args.quant:
                 for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
                     
-                    grad_hess_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad
-                    grad_hess_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess
+                    log_dict[f"grad-share-{dm}-{tk}/{ln}-vec"] = grad
+                    log_dict[f"hess-share-{dm}-{tk}/{ln}-vec"] = hess
                     temp_eigen = lw_eigen(hess)
-                    grad_hess_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
-                
-                
+                    log_dict[f"hess-share-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
 
                 for ln, grad, hess in zip(head_dict['name'], head_dict['grad'], head_dict['hess']):
-                    grad_hess_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad
-                    grad_hess_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
+                    log_dict[f"grad-head-{dm}-{tk}/{ln}-vec"] = grad
+                    log_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
                     temp_eigen = lw_eigen(hess)
-                    grad_hess_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
+                    log_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
             
-            grad_hess_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
-            grad_hess_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+            if args.hess:
+                log_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+                log_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+            
+            if args.grad:
+                log_dict[f"grad-share/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+                log_dict[f"grad-head/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
 
-    # layer-wise task-wise cosine matrix
     task_pairs = distinct_pairs(args.tkss)
-    share_cos_dct = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][args.tkss[0]]['share']['name']}
-    share_dot_dct = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][args.tkss[0]]['share']['name']}
-    for dm, dm_dict in hess_dict.items():
-        for tk_i, tk_j in task_pairs:
-
-            tk_dict_i = dm_dict[tk_i]
-            tk_dict_j = dm_dict[tk_j]
-
-            share_cos_dct[f'{dm}/{tk_i}-vs-{tk_j}'] = symmetry_cossine_similarity(tk_dict_i['share']['grad'], tk_dict_j['share']['grad'])
-        
-        for tk in args.tkss:
-            tk_dict = dm_dict[tk]
-            share_dot_dct[f'{dm}/{tk}'] = symmetry_dotprod_similarity(tk_dict['share']['grad'], tk_dict['share']['grad'])
-
     dm_pairs = distinct_pairs(list(hess_dict.keys()))
-    
-    for dm_i, dm_j in dm_pairs:
 
-        dm_dict_i = hess_dict[dm_i]
-        dm_dict_j = hess_dict[dm_j]
 
-        for tk in args.tkss:
 
-            tk_dm_dict_i = dm_dict_i[tk]
-            tk_dm_dict_j = dm_dict_j[tk]
+    if args.quant:
+        share_cos_dct = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][args.tkss[0]]['share']['name']}
+        share_dot_dct = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][args.tkss[0]]['share']['name']}
+        for dm, dm_dict in hess_dict.items():
+            for tk_i, tk_j in task_pairs:
 
-            share_cos_dct[f'{dm_i}-vs-{dm_j}/{tk}'] = symmetry_cossine_similarity(tk_dm_dict_i['share']['grad'], tk_dm_dict_j['share']['grad'])
+                tk_dict_i = dm_dict[tk_i]
+                tk_dict_j = dm_dict[tk_j]
 
-    grad_hess_dict[f'grad-share-cos-lw-tab'] = pd.DataFrame(share_cos_dct)
-    grad_hess_dict[f'grad-share-dot-lw-tab'] = pd.DataFrame(share_dot_dct)
-
-    for tk in args.tkss:
-        head_cos_dict = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][tk]['head']['name']}
-        head_dot_dict = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][tk]['head']['name']}
+                share_cos_dct[f'{dm}/{tk_i}-vs-{tk_j}'] = symmetry_cossine_similarity(tk_dict_i['share']['grad'], tk_dict_j['share']['grad'])
+            
+            for tk in args.tkss:
+                tk_dict = dm_dict[tk]
+                share_dot_dct[f'{dm}/{tk}'] = symmetry_dotprod_similarity(tk_dict['share']['grad'], tk_dict['share']['grad'])
+        
         for dm_i, dm_j in dm_pairs:
 
-            tk_dm_dict_i = hess_dict[dm_i][tk]
-            tk_dm_dict_j = hess_dict[dm_j][tk]
+            dm_dict_i = hess_dict[dm_i]
+            dm_dict_j = hess_dict[dm_j]
 
-            head_cos_dict[f'{dm_i}-vs-{dm_j}/{tk}'] = symmetry_cossine_similarity(tk_dm_dict_i['head']['grad'], tk_dm_dict_j['head']['grad'])
-        
-        for dm, dm_dict in hess_dict.items():
+            for tk in args.tkss:
 
-            tk_dm_dict = hess_dict[dm][tk]
+                tk_dm_dict_i = dm_dict_i[tk]
+                tk_dm_dict_j = dm_dict_j[tk]
+
+                share_cos_dct[f'{dm_i}-vs-{dm_j}/{tk}'] = symmetry_cossine_similarity(tk_dm_dict_i['share']['grad'], tk_dm_dict_j['share']['grad'])
+
+        log_dict[f'grad-share-cos-lw-tab'] = pd.DataFrame(share_cos_dct)
+        log_dict[f'grad-share-dot-lw-tab'] = pd.DataFrame(share_dot_dct)
+
+        for tk in args.tkss:
+            head_cos_dict = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][tk]['head']['name']}
+            head_dot_dict = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][tk]['head']['name']}
+            for dm_i, dm_j in dm_pairs:
+
+                tk_dm_dict_i = hess_dict[dm_i][tk]
+                tk_dm_dict_j = hess_dict[dm_j][tk]
+
+                head_cos_dict[f'{dm_i}-vs-{dm_j}/{tk}'] = symmetry_cossine_similarity(tk_dm_dict_i['head']['grad'], tk_dm_dict_j['head']['grad'])
             
-            head_dot_dict[f'{dm}/{tk}'] = symmetry_dotprod_similarity(tk_dm_dict['head']['grad'], tk_dm_dict['head']['grad'])
-    
-        grad_hess_dict[f'grad-heads-{tk}-cos-lw-tab'] = pd.DataFrame(head_cos_dict)
-        grad_hess_dict[f'grad-heads-{tk}-dot-lw-tab'] = pd.DataFrame(head_dot_dict)
+            for dm, dm_dict in hess_dict.items():
 
-    return grad_hess_dict
+                tk_dm_dict = hess_dict[dm][tk]
+                
+                head_dot_dict[f'{dm}/{tk}'] = symmetry_dotprod_similarity(tk_dm_dict['head']['grad'], tk_dm_dict['head']['grad'])
+        
+            log_dict[f'grad-heads-{tk}-cos-lw-tab'] = pd.DataFrame(head_cos_dict)
+            log_dict[f'grad-heads-{tk}-dot-lw-tab'] = pd.DataFrame(head_dot_dict)
+
+    return log_dict
