@@ -1,6 +1,6 @@
 """ CityScape Dataset"""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from .core import MTLDOGDS
 from argparse import Namespace
 from torch import Tensor
@@ -13,10 +13,48 @@ import numpy as np
 import torch
 import cv2
 import warnings
+import albumentations as A
 
 DOMAIN_TXT: List[str] = ['normal', 'foggy', 'rainy']
 DOMAIN_IDX: List[int] = [ 0,   1,   2]
 TASK_TXT: List[str] = ['seg', 'depth']
+
+def get_trans_lst():
+    return [
+        A.OneOf([
+            A.GaussNoise(var_limit=(5.0, 10.0)),
+            A.MultiplicativeNoise(),
+            A.RandomRain(),
+        ], p=0.2),
+        A.OneOf([
+            A.MotionBlur(blur_limit=5, p=0.4),
+            A.MedianBlur(blur_limit=5, p=0.4),
+            A.Blur(blur_limit=5, p=0.4),
+        ], p=0.2),
+        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.12, rotate_limit=15, p=0.5,
+                          border_mode = cv2.BORDER_CONSTANT),
+        A.OneOf([
+            A.OpticalDistortion(p=0.3),
+            A.GridDistortion(p=0.3),
+            A.PiecewiseAffine(p=0.3),
+        ], p=0.2),
+        A.OneOf([
+            A.CLAHE(clip_limit=2),
+            A.Sharpen(),
+            A.Emboss(),
+            A.RandomBrightnessContrast(),   
+            A.Downscale(interpolation = {
+                "downscale": cv2.INTER_NEAREST,
+                "upscale": cv2.INTER_NEAREST
+            }),
+        ], p=0.3),
+        A.OneOf([
+            A.HueSaturationValue(p=0.3),
+            A.ColorJitter(p=0.3),
+        ], p= 0.3),
+        A.RGBShift(p=0.5),
+        A.RandomShadow(p=0.2)
+    ]
 
 
 class CityScapes(MTLDOGDS):
@@ -27,15 +65,18 @@ class CityScapes(MTLDOGDS):
                  train: bool = True, 
                  default_domains: List[str] = DOMAIN_TXT, 
                  default_tasks: List[str] = TASK_TXT, 
-                 dm2idx: Dict[str, int] = {txt : idx for txt, idx in zip(DOMAIN_TXT, DOMAIN_IDX)}) -> None:
+                 dm2idx: Dict[str, int] = {txt : idx for txt, idx in zip(DOMAIN_TXT, DOMAIN_IDX)},
+                 size: Tuple[int] = (256, 512)) -> None:
         
         if root_dir is None:
             root_dir = "/".join(__file__.split("/")[:-1]) + "/src/cityscapes"
 
         super().__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
-        self.transform = transforms.Compose([transforms.Resize((256, 512)), transforms.ToTensor()])
-        self.seg_transform = transforms.Compose([transforms.Resize((256, 512)), transforms.PILToTensor(), self.make_semantic_class])
+        # self.transform = transforms.Compose([transforms.Resize((size[0], size[1])), transforms.ToTensor()])
+        # self.seg_transform = transforms.Compose([transforms.Resize((size[0], size[1])), transforms.PILToTensor(), self.make_semantic_class])
+
+        self.aug = A.Compose(get_trans_lst())
 
         self.semantic_map = {
             0 : ['unlabeled', 19, 'void'], 
@@ -136,17 +177,29 @@ class CityScapes(MTLDOGDS):
 
         tsk_dct = {}
 
+        masks = []
+        names = []
+
         for tk in self.tks:
             if tk == 'seg':
                 seg_path = self.seg_dir + f"/{city_name}/{img_name}_gtFine_labelIds.png"
-                tsk_dct[tk] = self.seg_transform(Image.open(seg_path))
+                mask = Image.open(seg_path)
             elif tk == 'depth':
                 if self.dm != 2:
                     depth_path = self.dep_dir + f"/{city_name}/{img_name}_disparity.png"
                 else:
                     depth_path = self.dep_dir + f"/{city_name}/{img_name}_depth_rain.png"
                 
-                tsk_dct[tk] = self.process_depth(depth_path)
+                mask = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
+            
+            masks.append(mask)
+            names.append(tk)
+        
+        transformed = self.aug(image=img, masks=masks)
+        transformed_image = transformed['image']
+        transformed_masks = transformed['masks']
+
+        
         
         return img, tsk_dct
 
@@ -162,9 +215,7 @@ class CityScapes(MTLDOGDS):
         return onehot
 
     @staticmethod
-    def process_depth(x):
-        depth = cv2.imread(x, cv2.IMREAD_UNCHANGED).astype(np.float32)
-        depth = cv2.resize(depth, (512, 256))
+    def process_depth(depth):
         depth[depth > 0] = (depth[depth > 0] - 1) / 256
 
         depth[depth == np.inf] = 0
