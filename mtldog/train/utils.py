@@ -4,7 +4,7 @@ from torch import Tensor
 from sklearn.metrics.pairwise import cosine_similarity as cossim
 from pandas import DataFrame
 from tabulate import tabulate
-from numpy.linalg import svd
+from torch import nn
 
 import pandas as pd
 import numpy as np
@@ -54,6 +54,9 @@ def hess_eigen(hess: List[Tensor]) -> Tensor:
     eigens = torch.cat([lw_eigen(_hess).flatten() for _hess in hess])
     return eigens
 
+def single_eigen(vector: Tensor):
+    return lw_eigen(vector).flatten()
+
 def cosine_similarity(vectors: List[Tensor]) -> np.array:
     vectors:np.array = torch.stack(vectors).numpy()
     cos_simi_mat = cossim(vectors, vectors)
@@ -79,6 +82,18 @@ def cosine_dataframe(keys: List[str], vectors: List[Tensor]):
 def dot_dataframe(keys: List[str], vectors: List[Tensor]):
     return matrix_dataframe(keys=keys, mat=dot_similarity(vectors=vectors))
 
+def lwflat(vectors: List[Tensor]):
+    return torch.cat([x.flatten() for x in vectors])
+
+def lwflatusq(vectors: List[Tensor]):
+    return torch.cat([x.flatten() for x in vectors]).unsqueeze(0)
+
+def usq(vector: Tensor):
+    return vector.unsqueeze(0)
+
+def norm2(vector: Tensor):
+    return vector.norm(p=2).item()
+
 def distinct_pairs(lst: List):
     _lst = []
     for i, x in enumerate(lst):
@@ -89,8 +104,6 @@ def distinct_pairs(lst: List):
 def show_log(mean_log: Dict, round: int, args: Namespace):
     print(f"ROUND: {round}\n", "{:<50} {:<50}\n".format('KEY', 'VALUE'), "*"*100)
 
-    share_grad_table = {}
-    heads_grad_table = {}
     share_gradlw_table = {}
     heads_gradlw_table = {tk : {} for tk in args.tkss}
 
@@ -108,17 +121,10 @@ def show_log(mean_log: Dict, round: int, args: Namespace):
                         share_gradlw_table[key] = tabulate(value, headers='keys', tablefmt='psql')
                     else:
                         heads_gradlw_table[key.split('-')[2]][key] = tabulate(value, headers='keys', tablefmt='psql')
-                else:
-                    if 'share' in key:
-                        share_grad_table[key] = tabulate(value, headers='keys', tablefmt='psql')
-                    else:
-                        heads_grad_table[key] = tabulate(value, headers='keys', tablefmt='psql')
         elif isinstance(value, list):
             print(key, 'is list')
         
     if args.extend_verbose:
-        print(table_cascade(share_grad_table))
-        print(table_cascade(heads_grad_table))
         print(table_cascade(share_gradlw_table))
         for tk in args.tkss:
             print(table_cascade(heads_gradlw_table[tk]))
@@ -133,61 +139,11 @@ def table_cascade(table_dict: Dict[str, str]):
 
     return master_table
 
-def preprocess_grad_train(grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]], sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor], args: Namespace) -> Dict[str, Tensor | DataFrame| float]:
-    
-    main_grad_dict = {}
-    if grad_dict is not None:
-        share_grad_dict = {dmtxt : grad_dict[dmtxt]['share'] for dmtxt in grad_dict}
-        head_grad_dict = {dmtxt : grad_dict[dmtxt]['heads'] for dmtxt in grad_dict}
+def preprocess_analysis(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None, 
+                         sol_grad_share: Tensor | None = None, sol_grad_head: Dict[str, Tensor] | None = None,
+                         args: Namespace | None = None) -> Dict[str, Tensor | DataFrame| float]:
 
-        share_grad_keys = []
-        share_grad_vectors = []
-        for dmtxt in share_grad_dict:
-            for tkidx, tk in enumerate(args.tkss):
-                share_grad_keys.append(f'{dmtxt}-{tk}')
-                share_grad_vectors.append(share_grad_dict[dmtxt][tkidx])
-
-                # main_grad_dict[f'grad-share/{dmtxt}-{tk}-vec'] = share_grad_dict[dmtxt][tkidx]
-                main_grad_dict[f'grad-share/{dmtxt}-{tk}-norm'] = share_grad_dict[dmtxt][tkidx].norm(p=2).item()
-        
-        main_grad_dict['grad-share-cos-tab'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-        main_grad_dict['grad-share-dot-tab'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-
-        if sol_grad_share is not None:
-            main_grad_dict[f'grad-share/sol-vec'] = sol_grad_share
-            share_grad_keys.append('sol-grad')
-            share_grad_vectors.append(sol_grad_share)
-
-            main_grad_dict['grad-share-sol-cos-tab'] = cosine_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-            main_grad_dict['grad-share-sol-dot-tab'] = dot_dataframe(keys=share_grad_keys, vectors=share_grad_vectors)
-
-        for _, tk in enumerate(args.tkss):
-            head_grad_keys = []
-            head_grad_vectors = []
-            for dmtxt in head_grad_dict:
-                head_grad_keys.append(f'{dmtxt}-{tk}')
-                head_grad_vectors.append(head_grad_dict[dmtxt][tk])
-            
-                # main_grad_dict[f'grad-heads/{dmtxt}-{tk}-vec'] = head_grad_dict[dmtxt][tk]
-                main_grad_dict[f'grad-heads/{dmtxt}-{tk}-norm'] = head_grad_dict[dmtxt][tk].norm(p=2).item()
-
-            main_grad_dict[f'grad-heads-{tk}-cos-tab'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-            main_grad_dict[f'grad-heads-{tk}-dot-tab'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-
-            if sol_grad_head is not None:
-                main_grad_dict[f'grad-head/sol-{tk}-vec'] = sol_grad_head[tk]
-                head_grad_keys.append(f'sol-{tk}-vec')
-                head_grad_vectors.append(sol_grad_head[tk])
-
-                main_grad_dict[f'grad-heads-sol-{tk}-cos-tab'] = cosine_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-                main_grad_dict[f'grad-heads-sol-{tk}-dot-tab'] = dot_dataframe(keys=head_grad_keys, vectors=head_grad_vectors)
-    
-    return main_grad_dict
-
-def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None, 
-                             args: Namespace | None = None) -> Dict[str, Tensor | DataFrame| float]:
-
-    assert args is None
+    assert args is not None
     
     log_dict = {}
 
@@ -197,8 +153,15 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
     # add tensor
     for dm, dm_dict in hess_dict.items():
         for tk, tk_dict in dm_dict.items():
+
             share_dict = tk_dict["share"]
             head_dict = tk_dict["head"]
+
+            share_dict['grad_flat'] = lwflat(share_dict['grad'])
+            share_dict['hess_flat'] = lwflat(share_dict['hess'])
+
+            head_dict['grad_flat'] = lwflat(head_dict['grad'])
+            head_dict['hess_flat'] = lwflat(head_dict['hess'])
 
             if args.quant:
                 for ln, grad, hess in zip(share_dict['name'], share_dict['grad'], share_dict['hess']):
@@ -213,19 +176,69 @@ def preprocess_grad_hess_adv(hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, 
                     log_dict[f"hess-head-{dm}-{tk}/{ln}-vec"] = hess
                     temp_eigen = lw_eigen(hess)
                     log_dict[f"hess-head-eigen-{dm}-{tk}/{ln}-vec"] = temp_eigen
+                
+                log_dict[f'grad-share/{dm}-{tk}-vec'] = share_dict['grad_flat']
+                log_dict[f'grad-head/{dm}-{tk}-vec'] = head_dict['grad_flat']
             
-            if args.hess:
-                log_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
-                log_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+            log_dict[f"hess-share-eigen/{dm}-{tk}-norm"] = norm2(single_eigen(share_dict['hess_flat']))
+            log_dict[f"hess-head-eigen/{dm}-{tk}-norm"] = norm2(single_eigen(head_dict['hess_flat']))
             
-            if args.grad:
-                log_dict[f"grad-share/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
-                log_dict[f"grad-head/{dm}-{tk}-norm"] = hess_eigen(share_dict['hess']).norm(p=2).item()
+            log_dict[f"grad-share/{dm}-{tk}-norm"] = norm2(share_dict['grad_flat'])
+            log_dict[f"grad-head/{dm}-{tk}-norm"] = norm2(head_dict['grad_flat'])
+    
+    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     task_pairs = distinct_pairs(args.tkss)
     dm_pairs = distinct_pairs(list(hess_dict.keys()))
 
+    for dm, dm_dict in hess_dict.items():
+        for tk_i, tk_j in task_pairs:
 
+            tk_dict_i = dm_dict[tk_i]
+            tk_dict_j = dm_dict[tk_j]
+
+            cosine = cos(usq(tk_dict_i['share']['grad_flat']), usq(tk_dict_j['share']['grad_flat'])).item()
+            log_dict[f"grad-share-cosine/{dm}-{tk_i}-vs-{tk_j}"] = cosine
+    
+    for dm_i, dm_j in dm_pairs:
+        dm_dict_i = hess_dict[dm_i]
+        dm_dict_j = hess_dict[dm_j]
+
+        for tk in args.tkss:
+
+            tk_dm_dict_i = dm_dict_i[tk]
+            tk_dm_dict_j = dm_dict_j[tk]
+
+            cosine = cos(usq(tk_dm_dict_i['share']['grad_flat']), usq(tk_dm_dict_j['share']['grad_flat'])).item()
+            log_dict[f"grad-share-cosine/{dm_i}-vs-{dm_j}-{tk}"] = cosine
+
+            cosine = cos(usq(tk_dm_dict_i['head']['grad_flat']), usq(tk_dm_dict_j['head']['grad_flat'])).item()
+            log_dict[f"grad-head-cosine/{dm_i}-vs-{dm_j}-{tk}"] = cosine
+    
+    if sol_grad_share:
+        log_dict[f"grad-sol/share-norm"] = norm2(sol_grad_share)
+        if args.quant:
+            log_dict[f"grad-sol/share-vec"] = sol_grad_share
+
+        for dm, dm_dict in hess_dict.items():
+            for tk, tk_dict in dm_dict.items():
+                share_dict = tk_dict["share"]
+
+                cosine = cos(usq(share_dict['grad_flat']), usq(sol_grad_share)).item()
+                log_dict[f"grad-sol-cosine/share-{dm}-{tk}"] = cosine
+    
+    if sol_grad_head:
+        for tk, vector in sol_grad_head.items():
+            log_dict[f"grad-sol/head-{tk}-norm"] = norm2(vector)
+            if args.quant:
+                log_dict[f"grad-sol/head-{tk}-vec"] = vector
+        
+        for dm, dm_dict in hess_dict.items():
+            for tk, tk_dict in dm_dict.items():
+                head_dict = tk_dict["head"]
+
+                cosine = cos(usq(head_dict['grad_flat']), usq(sol_grad_share[tk])).item()
+                log_dict[f"grad-sol-cosine/head-{dm}-{tk}"] = cosine
 
     if args.quant:
         share_cos_dct = {'layer-name' : hess_dict[list(hess_dict.keys())[0]][args.tkss[0]]['share']['name']}

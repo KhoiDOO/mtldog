@@ -111,17 +111,12 @@ class MTLDOGTR:
         else:
             self.log[key] = [value]
     
-    def log_extract(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]],
-                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor], 
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]]):
+    def log_extract(self, hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]],
+                sol_grad_share: Tensor, sol_grad_head: Dict[str, Tensor]):
         
         mean_log = {k : mean(self.log[k]) for k in self.log}
-        
-        main_grad_dict = preprocess_grad_train(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, args=self.args)
 
-        grad_hess_dict = preprocess_grad_hess_adv(hess_dict=hess_dict, args=self.args)
-        
-        mean_log.update(main_grad_dict)
+        grad_hess_dict = preprocess_analysis(hess_dict=hess_dict, args=self.args)
 
         mean_log.update(grad_hess_dict)
         
@@ -142,14 +137,13 @@ class MTLDOGTR:
         return non_vec_dict, {key: value for key, value in copy_log_dict.items() if 'vec' in key}
 
     
-    def sync(self, grad_dict: Dict[str, Dict[str, Tensor | Dict[str, Tensor]]] | None = None,
+    def sync(self, hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None,
                 sol_grad_share: Tensor | None = None, 
                 sol_grad_head: Dict[str, Tensor] | None = None, 
-                hess_dict: Dict[str, Dict[str, Dict[str, Dict[str, List[Tensor]]]]] | None = None,
                 state_dict: OrderedDict | None = None,
                 checkpoint: bool | None = None):
         
-        mean_log = self.log_extract(grad_dict=grad_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, hess_dict=hess_dict)
+        mean_log = self.log_extract(hess_dict=hess_dict, sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head)
         nonvec_dict, vec_log = self.postprocess_log(mean_log)
 
         if self.args.quant:

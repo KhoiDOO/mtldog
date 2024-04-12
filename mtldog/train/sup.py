@@ -93,11 +93,8 @@ class SUP(MTLDOGTR):
                                 trdm_loss_key = f"{trdm_txt}/train-in-{tk}-{loss_key.split('_')[-1]}"
                                 self.track(trdm_loss_key, train_losses[trdm_txt][tkix].item())
             
-            if is_master:
-                if args.grad:
-                    grad_dict = agent.module.get_grads_dm_share_heads(losses = train_losses, detach = True)
-                if args.hess:
-                    hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses)
+            if is_master and args.analysis:
+                hess_dict = agent.module.get_grads_hess_dm_share_heads(losses = train_losses)
                     
             optimizer.zero_grad()
             sol_grad_share, sol_grad_head = agent.module.backward(losses=train_losses)
@@ -150,9 +147,8 @@ class SUP(MTLDOGTR):
                             eval_loss_lst.append(torch.sum(eval_losses).item())
             
             if is_master:
-                remap = self.sync(grad_dict=grad_dict if args.grad else None, 
+                remap = self.sync(hess_dict=hess_dict if args.analysis else None, 
                           sol_grad_share=sol_grad_share, sol_grad_head=sol_grad_head, 
-                          hess_dict=hess_dict if args.hess else None,
                           checkpoint=checkpoint,
                           state_dict=agent.module.state_dict())
             
