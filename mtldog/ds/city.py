@@ -27,9 +27,9 @@ def get_trans_lst():
             A.RandomRain(),
         ], p=0.2),
         A.OneOf([
-            A.MotionBlur(blur_limit=5, p=0.4),
-            A.MedianBlur(blur_limit=5, p=0.4),
-            A.Blur(blur_limit=5, p=0.4),
+            A.MotionBlur(blur_limit=3, p=0.3),
+            A.MedianBlur(blur_limit=3, p=0.3),
+            A.Blur(blur_limit=3, p=0.3),
         ], p=0.2),
         A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.12, rotate_limit=15, p=0.5,
                           border_mode = cv2.BORDER_CONSTANT),
@@ -52,7 +52,7 @@ def get_trans_lst():
             A.HueSaturationValue(p=0.3),
             A.ColorJitter(p=0.3),
         ], p= 0.3),
-        A.RGBShift(p=0.5),
+        A.RGBShift(p=0.3),
         A.RandomShadow(p=0.2)
     ]
 
@@ -73,10 +73,8 @@ class CityScapes(MTLDOGDS):
 
         super().__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
-        # self.transform = transforms.Compose([transforms.Resize((size[0], size[1])), transforms.ToTensor()])
-        # self.seg_transform = transforms.Compose([transforms.Resize((size[0], size[1])), transforms.PILToTensor(), self.make_semantic_class])
-
-        self.aug = A.Compose(get_trans_lst())
+        self.aug = A.Compose(get_trans_lst(), p = 0.9)
+        self.res = A.Compose([A.Resize(size[0], size[1]), A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
 
         self.semantic_map = {
             0 : ['unlabeled', 19, 'void'], 
@@ -165,25 +163,20 @@ class CityScapes(MTLDOGDS):
     def __getitem__(self, index: int) -> tuple[Tensor, Dict[str, Tensor]]:
         
         img_path = self.img_paths[index]
-        img = self.transform(Image.open(img_path).convert("RGB"))
+        img = np.array(Image.open(img_path).convert("RGB"))
 
         filename = img_path.split("/")[-1]
-
         filename_split = filename.split("_")
-
         city_name = filename_split[0]
-
         img_name = "_".join(filename_split[:3])
 
         tsk_dct = {}
-
         masks = []
-        names = []
 
         for tk in self.tks:
             if tk == 'seg':
                 seg_path = self.seg_dir + f"/{city_name}/{img_name}_gtFine_labelIds.png"
-                mask = Image.open(seg_path)
+                mask = np.array(Image.open(seg_path))
             elif tk == 'depth':
                 if self.dm != 2:
                     depth_path = self.dep_dir + f"/{city_name}/{img_name}_disparity.png"
@@ -193,13 +186,24 @@ class CityScapes(MTLDOGDS):
                 mask = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
             
             masks.append(mask)
-            names.append(tk)
         
-        transformed = self.aug(image=img, masks=masks)
-        transformed_image = transformed['image']
-        transformed_masks = transformed['masks']
+        if self.tr:
+            aug_transformed = self.aug(image=img, masks=masks)
+            transformed = self.res(image = aug_transformed['image'], masks = aug_transformed['masks'])
+            transformed_image = transformed['image']
+            transformed_masks = transformed['masks']
+        else:
+            transformed = self.res(image=img, masks=masks)
+            transformed_image = transformed['image']
+            transformed_masks = transformed['masks']
 
+        for tk, mask in zip(self.tks, transformed_masks):
+            if tk == 'depth':
+                tsk_dct[tk] = self.process_depth(mask)
+            elif tk == 'seg':
+                tsk_dct[tk] = self.process_seg(mask)
         
+        img = torch.from_numpy(transformed_image).permute(-1, 0, 1)
         
         return img, tsk_dct
 
@@ -207,15 +211,16 @@ class CityScapes(MTLDOGDS):
     def map_subset(train: bool):
         return 'train' if train else 'val'
     
-    def make_semantic_class(self, x):
+    def process_seg(self, x: np.array) -> Tensor:
+        x = torch.from_numpy(x).unsqueeze(0)
         encx = torch.zeros(x.shape, dtype=torch.long)
         for label in self.semantic_map:
             encx[x == label] = self.semantic_map[label][1]
-        onehot = F.one_hot(encx.squeeze(1), 20).permute(0, 3, 1, 2)[0].float()
+        onehot = F.one_hot(encx, 20).permute(0, 3, 1, 2)[0].float()
         return onehot
 
     @staticmethod
-    def process_depth(depth):
+    def process_depth(depth: np.array) -> Tensor:
         depth[depth > 0] = (depth[depth > 0] - 1) / 256
 
         depth[depth == np.inf] = 0
@@ -226,18 +231,16 @@ class CityScapes(MTLDOGDS):
 
         return torch_depth
 
+
+
 def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     tr_dss = []
     te_dss = []
 
     for _, dmidx in enumerate(DOMAIN_IDX):
-        tr_dss.append(
-            CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=True)
-        )
+        tr_dss.append(CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=True))
 
-        te_dss.append(
-            CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=False)
-        )
+        te_dss.append(CityScapes(root_dir=args.dt, domain=dmidx, tasks=args.tkss, train=False))
     
     args.seg_num_classes = 20
     
@@ -262,7 +265,7 @@ def ds_citynormal(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     
     args.seg_num_classes = 20
 
-    return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False)]
+    return args, [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=True, size=args.size)], [CityScapes(root_dir=args.dt, domain=0, tasks=args.tkss, train=False, size=args.size)]
 
 def ds_cityfoggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
@@ -270,7 +273,7 @@ def ds_cityfoggy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     
     args.seg_num_classes = 20
 
-    return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False)]
+    return args, [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=True, size=args.size)], [CityScapes(root_dir=args.dt, domain=1, tasks=args.tkss, train=False, size=args.size)]
 
 def ds_cityrainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 
@@ -278,4 +281,4 @@ def ds_cityrainy(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
     
     args.seg_num_classes = 20
 
-    return args, [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=True)], [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=False)]
+    return args, [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=True, size=args.size)], [CityScapes(root_dir=args.dt, domain=2, tasks=args.tkss, train=False, size=args.size)]
