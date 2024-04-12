@@ -164,5 +164,8 @@ mtldog/wandb/
 mtldog/runs/
 mtldog/ds/src/
 mtldog/script/
-conversion/download
-conversion/export
+conversion/download/
+conversion/export/
+
+single_grad_cosine/
+viz/single_grad_cosine/
