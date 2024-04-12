@@ -169,3 +169,6 @@ conversion/export/
 
 single_grad_cosine/
 viz/single_grad_cosine/
+
+# extra extension
+*.ipynb
