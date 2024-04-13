@@ -56,6 +56,32 @@ def get_trans_lst():
         A.RandomShadow(p=0.2)
     ]
 
+def get_trans_nonnorm_lst():
+    return [
+        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.12, rotate_limit=15, p=0.5,
+                          border_mode = cv2.BORDER_CONSTANT),
+        A.OneOf([
+            A.OpticalDistortion(p=0.3),
+            A.GridDistortion(p=0.3),
+            A.PiecewiseAffine(p=0.3),
+        ], p=0.2),
+        A.OneOf([
+            A.CLAHE(clip_limit=2),
+            A.Sharpen(),
+            A.Emboss(),
+            A.RandomBrightnessContrast(),   
+            A.Downscale(interpolation = {
+                "downscale": cv2.INTER_NEAREST,
+                "upscale": cv2.INTER_NEAREST
+            }),
+        ], p=0.3),
+        A.OneOf([
+            A.HueSaturationValue(p=0.3),
+            A.ColorJitter(p=0.3),
+        ], p= 0.3),
+        A.RGBShift(p=0.3)
+    ]
+
 
 class CityScapes(MTLDOGDS):
     def __init__(self, 
@@ -73,7 +99,7 @@ class CityScapes(MTLDOGDS):
 
         super().__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
-        self.aug = A.Compose(get_trans_lst(), p = 0.9)
+        self.aug = A.Compose(get_trans_lst() if domain == 0 else get_trans_nonnorm_lst(), p = 0.9)
         self.res = A.Compose([A.Resize(size[0], size[1]), A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
 
         self.semantic_map = {
@@ -253,7 +279,7 @@ def check_args(args: Namespace, expect_domain:int):
                           thus automatically adjusting the args.trdms to [{2}]".format(args.ds, args.trdms, expect_domain))
     
     if len(args.trdms) > 1 or args.trdms[0] != expect_domain:
-        UW(args.trdms)
+        UW(args, expect_domain)
     
         args.trdms = [expect_domain]
 
