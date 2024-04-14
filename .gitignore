@@ -172,3 +172,4 @@ viz/single_grad_cosine/
 
 # extra extension
 *.ipynb
+*.sh
