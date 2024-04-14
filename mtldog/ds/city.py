@@ -99,7 +99,7 @@ class CityScapes(MTLDOGDS):
 
         super().__init__(root_dir, domain, tasks, train, default_domains, default_tasks, dm2idx)
 
-        self.aug = A.Compose(get_trans_lst() if domain == 0 else get_trans_nonnorm_lst(), p = 0.9)
+        self.aug = A.Compose(get_trans_nonnorm_lst(), p = 0.9)
         self.res = A.Compose([A.Resize(size[0], size[1]), A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
 
         self.semantic_map = {
