@@ -11,7 +11,7 @@ def loss_seg_blv(logits: Tensor, labels:Tensor, args: Namespace) -> Tensor:
 
     frequency_list = torch.log(m_list)
 
-    viariation = normal.Normal(0, args.blv_s).sample(logits.shape).clamp(-1, 1).to(logits.device)
+    viariation = normal.Normal(0, args.blvs).sample(logits.shape).clamp(-1, 1).to(logits.device)
 
     logits = logits + (viariation.abs().permute(0, 2, 3, 1) / frequency_list.max() * frequency_list).permute(0, 3, 1, 2)
 

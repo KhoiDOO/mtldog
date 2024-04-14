@@ -45,8 +45,8 @@ class CAG(MTLDOGALGO):
         else:
             w_opt = torch.optim.SGD([w], lr=25, momentum=0.5)
 
-        c = (gg+1e-4).sqrt() * self.params["cagrad_c"]
-
+        c = (gg+1e-4).sqrt() * self.args.cagradc
+        
         w_best = None
         obj_best = np.inf
         for i in range(21):
@@ -64,10 +64,8 @@ class CAG(MTLDOGALGO):
         gw_norm = (ww.t().mm(GG).mm(ww)+1e-4).sqrt()
 
         lmbda = c.view(-1) / (gw_norm+1e-4)
-        g = ((1/num_tasks + ww * lmbda).view(
-            -1, 1).to(grads.device) * grads).sum(0) / (1 + self.params["cagrad_c"]**2)
+        g = ((1/num_tasks + ww * lmbda).view(-1, 1).to(grads.device) * grads).sum(0) / (1 + self.args.cagradc**2)
         return g
-    
     
 
 def algo_cag():

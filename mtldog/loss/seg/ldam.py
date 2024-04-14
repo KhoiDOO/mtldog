@@ -8,7 +8,7 @@ def loss_seg_ldam(logits: Tensor, labels:Tensor, args: Namespace) -> Tensor:
 
     m_list = torch.sum(labels, dim=[0, 2, 3]) + 0.0000001
     m_list = 1.0 / torch.sqrt(torch.sqrt(m_list))
-    m_list = m_list * (args.max_m / torch.max(m_list))
+    m_list = m_list * (args.ldamm / torch.max(m_list))
 
     _logits = logits.permute(0, 2, 3, 1).flatten(0, -2)
     _labels = labels.permute(0, 2, 3, 1).flatten(0, -2).argmax(1).long()
@@ -22,4 +22,4 @@ def loss_seg_ldam(logits: Tensor, labels:Tensor, args: Namespace) -> Tensor:
     x_m = _logits - batch_m
 
     output = torch.where(index, x_m, _logits)
-    return F.cross_entropy(args.s * output, _labels)
+    return F.cross_entropy(args.ldams * output, _labels)

@@ -13,7 +13,7 @@ class UW(MTLDOGALGO):
     def init_param(self, args: Namespace) -> None:
         super().init_param(args)
 
-        self.loss_scale = torch.tensor([-0.5]*self.task_num, device=self.device)
+        self.loss_scale = nn.Parameter(torch.tensor([-0.5]*self.task_num, device=self.device))
 
     def backward(self, losses: Dict[str, Tensor]):
         task_loss = torch.mean(torch.cat(list(losses.values())), dim = 0)
