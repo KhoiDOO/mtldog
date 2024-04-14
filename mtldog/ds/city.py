@@ -275,7 +275,7 @@ def ds_city(args: Namespace) -> tuple[List[CityScapes], List[CityScapes]]:
 def check_args(args: Namespace, expect_domain:int):
 
     def UW(args: Namespace, expect_domain:int):
-        raise warnings.warn("You are choosing a dataset with specific domain: {0}, but the train domains are {1}, \
+        warnings.warn("You are choosing a dataset with specific domain: {0}, but the train domains are {1}, \
                           thus automatically adjusting the args.trdms to [{2}]".format(args.ds, args.trdms, expect_domain))
     
     if len(args.trdms) > 1 or args.trdms[0] != expect_domain:
